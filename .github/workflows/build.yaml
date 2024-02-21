@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
     steps:
       - name: git clone
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
       - name: Load Cached Flutter SDK
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
@@ -48,7 +48,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Clone Flutter DevTools
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
         with:
           ref: "${{ github.event.pull_request.head.sha }}"
       - name: Load Cached Flutter SDK
@@ -87,7 +87,7 @@ jobs:
           - devtools_shared
     steps:
       - name: git clone
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
       - name: Load Cached Flutter SDK
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
@@ -113,7 +113,7 @@ jobs:
           - test_dart2js
     steps:
       - name: git clone
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
       - name: Load Cached Flutter SDK
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
@@ -140,7 +140,7 @@ jobs:
 
     steps:
       - name: git clone
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
       - name: Load Cached Flutter SDK
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
@@ -210,7 +210,7 @@ jobs:
             shard: 3/3
     steps:
       - name: git clone
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
       - name: Load Cached Flutter SDK
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
@@ -243,7 +243,7 @@ jobs:
         bot: [integration_dart2js]
     steps:
       - name: git clone
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
       - name: Load Cached Flutter SDK
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
@@ -264,7 +264,7 @@ jobs:
       fail-fast: false
     steps:
       - name: git clone
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
       - name: Load Cached Flutter SDK
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
@@ -282,7 +282,7 @@ jobs:
       fail-fast: false
     steps:
       - name: git clone
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
       - name: Load Cached Flutter SDK
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
@@ -305,7 +305,7 @@ jobs:
 #          - test_dart2js
 #    steps:
 #      - name: git clone
-#        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+#        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
 #
 #      - name: tool/ci/bots.sh
 #        env:
@@ -325,7 +325,7 @@ jobs:
 #          - integration_dart2js
 #    steps:
 #      - name: git clone
-#        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+#        uses: actions/checkout@473055ba18d6d2da209cd46110aadb9275e3194e
 #      - name: tool/ci/bots.sh
 #        env:
 #          BOT: ${{ matrix.bot }}
