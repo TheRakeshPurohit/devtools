@@ -1,8 +1,10 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
+
+import 'package:meta/meta.dart';
 
 /// An event type for use with [MessageBus].
 class BusEvent {
@@ -20,7 +22,7 @@ class BusEvent {
 /// event listeners.
 class MessageBus {
   MessageBus() {
-    _controller = StreamController.broadcast();
+    _controller = StreamController<BusEvent>.broadcast();
   }
 
   late StreamController<BusEvent> _controller;
@@ -41,6 +43,7 @@ class MessageBus {
   /// Close (destroy) this [MessageBus]. This is generally not used outside of a
   /// testing context. All stream listeners will be closed and the bus will not
   /// fire any more events.
+  @visibleForTesting
   void close() {
     unawaited(_controller.close());
   }

@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:io';
 
@@ -13,17 +13,28 @@ import '../utils.dart';
 import 'shared.dart';
 
 const _buildFlag = 'build';
+const _authFlag = 'auth';
 
 class UpdatePerfettoCommand extends Command {
   UpdatePerfettoCommand() {
-    argParser.addOption(
-      _buildFlag,
-      abbr: 'b',
-      help: 'The build location of the Perfetto assets. When this is not '
-          'specified, the Perfetto assets will be fetched from the latest '
-          'source code at "android.googlesource.com".',
-      valueHelp: '/Users/me/path/to/perfetto/out/ui/ui/dist',
-    );
+    argParser
+      ..addOption(
+        _buildFlag,
+        abbr: 'b',
+        help:
+            'The build location of the Perfetto assets. When this is not '
+            'specified, the Perfetto assets will be fetched from the latest '
+            'source code at "android.googlesource.com".',
+        valueHelp: '/Users/me/path/to/perfetto/out/ui/ui/dist',
+      )
+      ..addFlag(
+        _authFlag,
+        negatable: true,
+        defaultsTo: true,
+        help:
+            'Whether to authenticate via "gcert" before cloning the Perfetto '
+            'repository.',
+      );
   }
 
   @override
@@ -43,19 +54,29 @@ class UpdatePerfettoCommand extends Command {
 
     final processManager = ProcessManager();
 
+    final authenticate = argResults![_authFlag] as bool;
+    if (authenticate) {
+      await processManager.runProcess(CliCommand('gcert', []));
+    }
+
     final perfettoUiCompiledLibPath = pathFromRepoRoot(
       path.join('third_party', 'packages', 'perfetto_ui_compiled', 'lib'),
     );
-    final perfettoUiCompiledBuildPath =
-        path.join(perfettoUiCompiledLibPath, 'dist');
-    final perfettoDevToolsPath =
-        path.join(perfettoUiCompiledBuildPath, 'devtools');
+    final perfettoUiCompiledBuildPath = path.join(
+      perfettoUiCompiledLibPath,
+      'dist',
+    );
+    final perfettoDevToolsPath = path.join(
+      perfettoUiCompiledBuildPath,
+      'devtools',
+    );
 
     logStatus(
       'moving DevTools-Perfetto integration files to a temp directory.',
     );
-    final tempPerfettoDevTools =
-        Directory.systemTemp.createTempSync('perfetto_devtools');
+    final tempPerfettoDevTools = Directory.systemTemp.createTempSync(
+      'perfetto_devtools',
+    );
     await copyPath(perfettoDevToolsPath, tempPerfettoDevTools.path);
 
     logStatus('deleting existing Perfetto build');
@@ -63,7 +84,7 @@ class UpdatePerfettoCommand extends Command {
     existingBuild.deleteSync(recursive: true);
 
     logStatus('updating Perfetto build');
-    final buildLocation = argResults![_buildFlag];
+    final buildLocation = argResults![_buildFlag] as String?;
     if (buildLocation != null) {
       logStatus('using Perfetto build from $buildLocation');
       logStatus(
@@ -72,21 +93,22 @@ class UpdatePerfettoCommand extends Command {
       await copyPath(buildLocation, perfettoUiCompiledBuildPath);
     } else {
       logStatus('cloning Perfetto from HEAD and building from source');
-      final tempPerfettoClone =
-          Directory.systemTemp.createTempSync('perfetto_clone');
+      final tempPerfettoClone = Directory.systemTemp.createTempSync(
+        'perfetto_clone',
+      );
       await processManager.runProcess(
-        CliCommand.git(
-          cmd:
-              'clone https://android.googlesource.com/platform/external/perfetto',
-        ),
+        CliCommand.git([
+          'clone',
+          'https://android.googlesource.com/platform/external/perfetto',
+        ]),
         workingDirectory: tempPerfettoClone.path,
       );
 
       logStatus('installing build deps and building the Perfetto UI');
       await processManager.runAll(
         commands: [
-          CliCommand('${path.join('tools', 'install-build-deps')} --ui'),
-          CliCommand(path.join('ui', 'build')),
+          CliCommand(path.join('tools', 'install-build-deps'), ['--ui']),
+          CliCommand(path.join('ui', 'build'), []),
         ],
         workingDirectory: path.join(tempPerfettoClone.path, 'perfetto'),
       );
@@ -176,7 +198,7 @@ class UpdatePerfettoCommand extends Command {
     String newVersionNumber = '';
     final versionRegExp = RegExp(r'v\d+[.]\d+-[0-9a-fA-F]+');
     final entities = perfettoDistDir.listSync();
-    for (FileSystemEntity entity in entities) {
+    for (final entity in entities) {
       final path = entity.path;
       final match = versionRegExp.firstMatch(path);
       if (match != null) {

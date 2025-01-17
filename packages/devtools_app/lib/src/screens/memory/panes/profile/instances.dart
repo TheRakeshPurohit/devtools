@@ -1,6 +1,8 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -23,11 +25,13 @@ class ProfileInstanceTableCell extends StatelessWidget {
     required this.count,
   }) : _shouldShowMenu = isSelected && count > 0;
 
+  // TODO(https://github.com/flutter/devtools/issues/7905): this is a bug that
+  // this is unused.
   final MemoryAreas gaContext;
   final int count;
   final bool _shouldShowMenu;
   final HeapClassName heapClass;
-  late final ClassSampler _sampler = ClassSampler(heapClass);
+  late final _sampler = LiveClassSampler(heapClass);
 
   @override
   Widget build(BuildContext context) {
@@ -48,24 +52,24 @@ class ProfileInstanceTableCell extends StatelessWidget {
 class _StoreAllAsVariableMenu extends StatelessWidget {
   const _StoreAllAsVariableMenu(this.sampler);
 
-  final ClassSampler sampler;
+  final LiveClassSampler sampler;
 
   @override
   Widget build(BuildContext context) {
     const menuText = 'Store all class instances';
 
     MenuItemButton item(
-      title, {
+      String title, {
       required bool subclasses,
       required bool implementers,
-    }) =>
-        MenuItemButton(
-          onPressed: () async => await sampler.allLiveToConsole(
+    }) => MenuItemButton(
+      onPressed:
+          () async => await sampler.allLiveToConsole(
             includeImplementers: implementers,
             includeSubclasses: subclasses,
           ),
-          child: Text(title),
-        );
+      child: Text(title),
+    );
 
     return SubmenuButton(
       menuChildren: <Widget>[
@@ -86,15 +90,16 @@ class _StoreAllAsVariableMenu extends StatelessWidget {
 class _StoreAsOneVariableMenu extends StatelessWidget {
   const _StoreAsOneVariableMenu(this.sampler);
 
-  final ClassSampler sampler;
+  final LiveClassSampler sampler;
 
   @override
   Widget build(BuildContext context) {
     return MenuItemButton(
-      onPressed: sampler.oneLiveToConsole,
-      child: const Text(
-        'Store one instance as a console variable',
-      ),
+      onPressed:
+          () => unawaited(
+            sampler.oneLiveToConsole(sourceFeature: MemoryAreas.profile.name),
+          ),
+      child: const Text('Store one instance as a console variable'),
     );
   }
 }

@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:math';
 
@@ -11,16 +11,12 @@ const defaultArrowColor = Colors.white;
 const defaultArrowStrokeWidth = 2.0;
 const defaultDistanceToArrow = 4.0;
 
-enum ArrowType {
-  up,
-  left,
-  right,
-  down,
-}
+enum ArrowType { up, left, right, down }
 
-Axis axis(ArrowType type) => (type == ArrowType.up || type == ArrowType.down)
-    ? Axis.vertical
-    : Axis.horizontal;
+Axis axis(ArrowType type) =>
+    (type == ArrowType.up || type == ArrowType.down)
+        ? Axis.vertical
+        : Axis.horizontal;
 
 /// Widget that draws a bidirectional arrow around another widget.
 ///
@@ -28,37 +24,35 @@ Axis axis(ArrowType type) => (type == ArrowType.up || type == ArrowType.down)
 @immutable
 class ArrowWrapper extends StatelessWidget {
   ArrowWrapper.unidirectional({
-    Key? key,
+    super.key,
     this.child,
     required ArrowType type,
     this.arrowColor = defaultArrowColor,
     double? arrowHeadSize,
     this.arrowStrokeWidth = defaultArrowStrokeWidth,
     this.childMarginFromArrow = defaultDistanceToArrow,
-  })  : assert(childMarginFromArrow > 0.0),
-        direction = axis(type),
-        isBidirectional = false,
-        startArrowType = type,
-        endArrowType = type,
-        arrowHeadSize = arrowHeadSize ?? defaultIconSize,
-        super(key: key);
+  }) : assert(childMarginFromArrow > 0.0),
+       direction = axis(type),
+       isBidirectional = false,
+       startArrowType = type,
+       endArrowType = type,
+       arrowHeadSize = arrowHeadSize ?? defaultIconSize;
 
   const ArrowWrapper.bidirectional({
-    Key? key,
+    super.key,
     this.child,
     required this.direction,
     this.arrowColor = defaultArrowColor,
     required this.arrowHeadSize,
     this.arrowStrokeWidth = defaultArrowStrokeWidth,
     this.childMarginFromArrow = defaultDistanceToArrow,
-  })  : assert(arrowHeadSize >= 0.0),
-        assert(childMarginFromArrow >= 0.0),
-        isBidirectional = true,
-        startArrowType =
-            direction == Axis.horizontal ? ArrowType.left : ArrowType.up,
-        endArrowType =
-            direction == Axis.horizontal ? ArrowType.right : ArrowType.down,
-        super(key: key);
+  }) : assert(arrowHeadSize >= 0.0),
+       assert(childMarginFromArrow >= 0.0),
+       isBidirectional = true,
+       startArrowType =
+           direction == Axis.horizontal ? ArrowType.left : ArrowType.up,
+       endArrowType =
+           direction == Axis.horizontal ? ArrowType.right : ArrowType.down;
 
   final Color arrowColor;
   final double arrowHeadSize;
@@ -98,10 +92,11 @@ class ArrowWrapper extends StatelessWidget {
               headSize: arrowHeadSize,
               strokeWidth: arrowStrokeWidth,
               type: startArrowType,
-              shouldDrawHead: isBidirectional
-                  ? true
-                  : (startArrowType == ArrowType.left ||
-                      startArrowType == ArrowType.up),
+              shouldDrawHead:
+                  isBidirectional
+                      ? true
+                      : (startArrowType == ArrowType.left ||
+                          startArrowType == ArrowType.up),
             ),
           ),
         ),
@@ -117,10 +112,11 @@ class ArrowWrapper extends StatelessWidget {
               headSize: arrowHeadSize,
               strokeWidth: arrowStrokeWidth,
               type: endArrowType,
-              shouldDrawHead: isBidirectional
-                  ? true
-                  : (endArrowType == ArrowType.right ||
-                      endArrowType == ArrowType.down),
+              shouldDrawHead:
+                  isBidirectional
+                      ? true
+                      : (endArrowType == ArrowType.right ||
+                          endArrowType == ArrowType.down),
             ),
           ),
         ),
@@ -135,20 +131,19 @@ class ArrowWidget extends StatelessWidget {
   ArrowWidget({
     this.color = defaultArrowColor,
     required this.headSize,
-    Key? key,
+    super.key,
     this.shouldDrawHead = true,
     this.strokeWidth = defaultArrowStrokeWidth,
     required this.type,
-  })  : assert(headSize > 0.0),
-        assert(strokeWidth > 0.0),
-        _painter = _ArrowPainter(
-          headSize: headSize,
-          color: color,
-          strokeWidth: strokeWidth,
-          type: type,
-          shouldDrawHead: shouldDrawHead,
-        ),
-        super(key: key);
+  }) : assert(headSize > 0.0),
+       assert(strokeWidth > 0.0),
+       _painter = _ArrowPainter(
+         headSize: headSize,
+         color: color,
+         strokeWidth: strokeWidth,
+         type: type,
+         shouldDrawHead: shouldDrawHead,
+       );
 
   final Color color;
 
@@ -165,10 +160,7 @@ class ArrowWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _painter,
-      child: Container(),
-    );
+    return CustomPaint(painter: _painter, child: Container());
   }
 }
 
@@ -180,7 +172,7 @@ class _ArrowPainter extends CustomPainter {
     this.shouldDrawHead = true,
     required this.type,
   }) : // the height of an equilateral triangle
-        headHeight = 0.5 * sqrt(3) * headSize;
+       headHeight = 0.5 * sqrt(3) * headSize;
 
   final Color color;
   final double headSize;
@@ -207,9 +199,10 @@ class _ArrowPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth;
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = strokeWidth;
 
     final originX = size.width / 2, originY = size.height / 2;
     Offset lineStartingPoint = Offset.zero;
@@ -242,11 +235,12 @@ class _ArrowPainter extends CustomPainter {
           p3 = Offset(originX + headSizeDividedBy2, startingY);
           break;
       }
-      final path = Path()
-        ..moveTo(p1.dx, p1.dy)
-        ..lineTo(p2.dx, p2.dy)
-        ..lineTo(p3.dx, p3.dy)
-        ..close();
+      final path =
+          Path()
+            ..moveTo(p1.dx, p1.dy)
+            ..lineTo(p2.dx, p2.dy)
+            ..lineTo(p3.dx, p3.dy)
+            ..close();
       canvas.drawPath(path, paint);
 
       switch (type) {
@@ -284,10 +278,6 @@ class _ArrowPainter extends CustomPainter {
           break;
       }
     }
-    canvas.drawLine(
-      lineStartingPoint,
-      lineEndingPoint,
-      paint,
-    );
+    canvas.drawLine(lineStartingPoint, lineEndingPoint, paint);
   }
 }

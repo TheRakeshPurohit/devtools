@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +12,9 @@ import '../../../../shared/globals.dart';
 import 'performance_controls.dart';
 
 class MoreDebuggingOptionsButton extends StatelessWidget {
-  const MoreDebuggingOptionsButton({Key? key}) : super(key: key);
+  const MoreDebuggingOptionsButton({super.key});
 
-  static const _width = 720.0;
+  static const _width = 620.0;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,7 @@ class MoreDebuggingOptionsButton extends StatelessWidget {
         extensions.disableClipLayers,
         extensions.disableOpacityLayers,
         extensions.disablePhysicalShapeLayers,
-        if (FeatureFlags.widgetRebuildstats) extensions.trackRebuildWidgets,
+        if (FeatureFlags.widgetRebuildStats) extensions.countWidgetBuilds,
       ],
       overlayDescription: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,15 +42,18 @@ class MoreDebuggingOptionsButton extends StatelessWidget {
             style: theme.subtleTextStyle,
           ),
           if (serviceConnection
-              .serviceManager.connectedApp!.isProfileBuildNow!) ...[
+              .serviceManager
+              .connectedApp!
+              .isProfileBuildNow!) ...[
             const SizedBox(height: denseSpacing),
             RichText(
               text: TextSpan(
                 text:
                     "These debugging options aren't available in profile mode. "
                     'To use them, run your app in debug mode.',
-                style: theme.subtleTextStyle
-                    .copyWith(color: theme.colorScheme.error),
+                style: theme.subtleTextStyle.copyWith(
+                  color: theme.colorScheme.error,
+                ),
               ),
             ),
           ],

@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 part of '_simulated_devtools_environment.dart';
 
@@ -64,13 +64,9 @@ class SimulatedDevToolsController extends DisposableController
     // persists on hot restart.
 
     // TODO(kenz): add some validation and error handling if [uri] is bad input.
-    final normalizedUri =
-        uri != null ? normalizeVmServiceUri(uri).toString() : null;
     final event = DevToolsExtensionEvent(
       DevToolsExtensionEventType.vmServiceConnection,
-      data: {
-        ExtensionEventParameters.vmServiceConnectionUri: normalizedUri,
-      },
+      data: {ExtensionEventParameters.vmServiceConnectionUri: uri},
     );
     _postMessageToExtension(event);
   }
@@ -121,22 +117,12 @@ class SimulatedDevToolsController extends DisposableController
 
   Future<void> hotReloadConnectedApp() async {
     await serviceManager.performHotReload();
-    messageLogs.add(
-      MessageLogEntry(
-        source: MessageSource.info,
-        message: 'Hot reload performed on connected app',
-      ),
-    );
+    logInfoEvent('Hot reload performed on connected app');
   }
 
   Future<void> hotRestartConnectedApp() async {
     await serviceManager.performHotRestart();
-    messageLogs.add(
-      MessageLogEntry(
-        source: MessageSource.info,
-        message: 'Hot restart performed on connected app',
-      ),
-    );
+    logInfoEvent('Hot restart performed on connected app');
   }
 
   void toggleTheme() {
@@ -145,6 +131,12 @@ class SimulatedDevToolsController extends DisposableController
       theme: darkThemeEnabled
           ? ExtensionEventParameters.themeValueLight
           : ExtensionEventParameters.themeValueDark,
+    );
+  }
+
+  void logInfoEvent(String message) {
+    messageLogs.add(
+      MessageLogEntry(source: MessageSource.info, message: message),
     );
   }
 

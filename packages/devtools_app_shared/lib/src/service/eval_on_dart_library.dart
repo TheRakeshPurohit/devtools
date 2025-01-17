@@ -1,6 +1,6 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 // This code is directly based on src/io/flutter/inspector/EvalOnDartLibrary.java
 // If you add a method to this class you should also add it to EvalOnDartLibrary.java
@@ -40,6 +40,7 @@ class EvalOnDartLibrary extends DisposableController
     ValueListenable<IsolateRef?>? isolate,
     this.disableBreakpoints = true,
     this.oneRequestAtATime = false,
+    this.logExceptions = true,
   }) : _clientId = Random().nextInt(1000000000) {
     _libraryRef = Completer<LibraryRef>();
 
@@ -59,6 +60,9 @@ class EvalOnDartLibrary extends DisposableController
 
   /// Whether to disable breakpoints triggered while evaluating expressions.
   final bool disableBreakpoints;
+
+  /// Whether to log exceptions to stdout on failed evaluations.
+  final bool logExceptions;
 
   /// An ID unique to this instance, so that [asyncEval] keeps working even if
   /// the devtool is opened on multiple tabs at the same time.
@@ -102,7 +106,7 @@ class EvalOnDartLibrary extends DisposableController
 
   late Completer<LibraryRef> _libraryRef;
 
-  Completer? allPendingRequestsDone;
+  Completer<void>? allPendingRequestsDone;
 
   Isolate? get isolate => _isolate;
   Isolate? _isolate;
@@ -114,14 +118,14 @@ class EvalOnDartLibrary extends DisposableController
     }
 
     try {
-      final Isolate? isolate =
+      final isolate =
           await serviceManager.isolateManager.isolateState(isolateRef).isolate;
       if (_currentRequestId != requestId) {
         // The initialize request is obsolete.
         return;
       }
       _isolate = isolate;
-      for (LibraryRef library in isolate?.libraries ?? []) {
+      for (final library in isolate?.libraries ?? <LibraryRef>[]) {
         if (libraryName == library.uri) {
           assert(!_libraryRef.isCompleted);
           _libraryRef.complete(library);
@@ -261,7 +265,7 @@ class EvalOnDartLibrary extends DisposableController
   }
 
   void _handleError(Object e, StackTrace stack) {
-    if (_disposed) return;
+    if (_disposed || !logExceptions) return;
 
     if (e is RPCError) {
       _log.shout('RPCError: $e', e, stack);
@@ -564,7 +568,7 @@ class EvalOnDartLibrary extends DisposableController
       return request();
     }
     // Future that completes when the request has finished.
-    final Completer<T?> response = Completer();
+    final response = Completer<T?>();
     // This is an optimization to avoid sending stale requests across the wire.
     void wrappedRequest() async {
       if (isAlive != null && isAlive.disposed || _disposed) {
@@ -596,7 +600,7 @@ class EvalOnDartLibrary extends DisposableController
         return response.future;
       }
 
-      final Future previousDone = allPendingRequestsDone!.future;
+      final previousDone = allPendingRequestsDone!.future;
       allPendingRequestsDone = response;
       // Schedule this request only after the previous request completes.
       try {

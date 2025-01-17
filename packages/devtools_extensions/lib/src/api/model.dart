@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'api.dart';
 
@@ -134,6 +134,39 @@ class ShowBannerMessageExtensionEvent extends DevToolsExtensionEvent {
   String get extensionName => data![_extensionNameKey] as String;
   bool get ignoreIfAlreadyDismissed =>
       (data![_ignoreIfAlreadyDismissedKey] as bool?) ?? true;
+}
+
+/// An extension event of type [DevToolsExtensionEventType.copyToClipboard]
+/// that is sent from an extension to DevTools asking DevTools copy content to
+/// the user's clipboard.
+class CopyToClipboardExtensionEvent extends DevToolsExtensionEvent {
+  CopyToClipboardExtensionEvent({
+    required String content,
+    String successMessage = defaultSuccessMessage,
+  }) : super(
+          DevToolsExtensionEventType.copyToClipboard,
+          data: {
+            _contentKey: content,
+            _successMessageKey: successMessage,
+          },
+        );
+
+  factory CopyToClipboardExtensionEvent.from(DevToolsExtensionEvent event) {
+    assert(event.type == DevToolsExtensionEventType.copyToClipboard);
+    final content = event.data!.checkValid<String>(_contentKey);
+    final successMessage = event.data!.checkValid<String>(_successMessageKey);
+    return CopyToClipboardExtensionEvent(
+      content: content,
+      successMessage: successMessage,
+    );
+  }
+
+  static const _contentKey = 'content';
+  static const _successMessageKey = 'successMessage';
+  static const defaultSuccessMessage = 'Copied to clipboard';
+
+  String get content => data![_contentKey] as String;
+  String get successMessage => data![_successMessageKey] as String;
 }
 
 extension ParseExtension on Map<String, Object?> {

@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:convert';
@@ -11,7 +11,8 @@ import 'package:io/io.dart';
 import 'package:path/path.dart' as path;
 
 abstract class DartSdkHelper {
-  static const commandDebugMessage = 'Consider running this command from your'
+  static const commandDebugMessage =
+      'Consider running this command from your'
       'Dart SDK directory locally to debug.';
 
   static Future<void> fetchAndCheckoutMaster(
@@ -22,9 +23,9 @@ abstract class DartSdkHelper {
       workingDirectory: dartSdkLocation,
       additionalErrorMessage: commandDebugMessage,
       commands: [
-        CliCommand.git(cmd: 'fetch origin'),
-        CliCommand.git(cmd: 'rebase-update'),
-        CliCommand.git(cmd: 'checkout origin/main'),
+        CliCommand.git(['fetch', 'origin']),
+        CliCommand.git(['rebase-update']),
+        CliCommand.git(['checkout', 'origin/main']),
       ],
     );
   }
@@ -33,99 +34,78 @@ abstract class DartSdkHelper {
 String localDartSdkLocation() {
   final localDartSdkLocation = Platform.environment['LOCAL_DART_SDK'];
   if (localDartSdkLocation == null) {
-    throw Exception('LOCAL_DART_SDK environment variable not set. Please add '
-        'the following to your \'.bash_profile\' or \'.bash_rc\' file:\n'
-        'export LOCAL_DART_SDK=<absolute/path/to/my/dart/sdk>');
+    throw Exception(
+      'LOCAL_DART_SDK environment variable not set. Please add '
+      'the following to your \'.bash_profile\' or \'.bash_rc\' file:\n'
+      'export LOCAL_DART_SDK=<absolute/path/to/my/dart/sdk>',
+    );
   }
   return localDartSdkLocation;
 }
 
 class CliCommand {
-  CliCommand._({
-    String? command,
-    String? exe,
-    List<String>? args,
-    this.throwOnException = true,
-  }) {
-    assert((command == null) != ((exe == null) && (args == null)));
-    final commandElements = command?.split(' ');
-    this.exe = exe ?? commandElements!.first;
-    this.args = args ?? commandElements!.sublist(1);
-  }
-
   CliCommand(
-    String command, {
+    this.exe,
+    // Args is mandatory to make it clearer to the caller that they should
+    // not be passing a full exe+args into the first string argument, because
+    // this can lead to bugs if paths have spaces and everything is not escaped.
+    this.args, {
     this.throwOnException = true,
-  })  : exe = command.split(' ').first,
-        args = command.split(' ').sublist(1);
+  });
 
-  factory CliCommand.from(
-    String exe,
+  factory CliCommand.flutter(
     List<String> args, {
     bool throwOnException = true,
   }) {
-    return CliCommand._(
-      exe: exe,
-      args: args,
+    return CliCommand(
+      FlutterSdk.current.flutterExePath,
+      args,
       throwOnException: throwOnException,
     );
   }
 
-  factory CliCommand.flutter(
-    String args, {
+  factory CliCommand.dart(
+    List<String> args, {
     bool throwOnException = true,
+    String? sdkOverride,
   }) {
-    final sdk = FlutterSdk.current;
-    return CliCommand._(
-      exe: sdk.flutterToolPath,
-      args: args.split(' '),
+    return CliCommand(
+      sdkOverride ?? FlutterSdk.current.dartExePath,
+      args,
       throwOnException: throwOnException,
     );
   }
 
   /// CliCommand helper for running git commands.
-  ///
-  /// Arguments can be passed in as a single string using [cmd], this will split
-  /// the string into args using spaces. e.g. CliCommand.git(cmd: 'checkout test-branch')
-  ///
-  /// If you instead want to specify args explicitly, you can use the
-  /// [args] param. e.g. CliCommand.git(args: ['checkout', 'test-branch'])
-  factory CliCommand.git({
-    String? cmd,
-    List<String>? args,
-    bool throwOnException = true,
-    bool split = true,
-  }) {
-    if ((cmd == null) == (args == null)) {
-      throw ('Only one of `cmd` and `args` must be specified.');
-    }
-
-    if (cmd != null) {
-      args = cmd.split(' ');
-    }
-
-    return CliCommand._(
-      exe: 'git',
-      args: args,
-      throwOnException: throwOnException,
-    );
+  factory CliCommand.git(List<String> args, {bool throwOnException = true}) {
+    return CliCommand('git', args, throwOnException: throwOnException);
   }
 
-  factory CliCommand.tool(
-    String args, {
-    bool throwOnException = true,
-  }) {
-    return CliCommand._(
+  factory CliCommand.tool(List<String> args, {bool throwOnException = true}) {
+    var toolPath = Platform.script.toFilePath();
+    if (!File(toolPath).existsSync()) {
+      // Handling https://github.com/dart-lang/sdk/issues/54493
+      // Platform.script.toFilePath() duplicates next to current directory, when run recursively from itself.
+      toolPath = toolPath.replaceAll(
+        'devtools/tool/tool/bin/dt.dart',
+        'devtools/tool/bin/dt.dart',
+      );
+    }
+
+    assert(
+      File(toolPath).existsSync(),
+      'Tool path could not be determined, got: $toolPath.'
+      'It may be result of https://github.com/dart-lang/sdk/issues/54493',
+    );
+
+    return CliCommand(
       // We must use the Dart VM from FlutterSdk.current here to ensure we
       // consistently use the selected version for child invocations. We do
       // not need to pass the --flutter-from-path flag down because using the
       // tool will automatically select the one that's running the VM and we'll
       // have selected that here.
-      exe: FlutterSdk.current.dartToolPath,
-      args: [
-        Platform.script.toFilePath(),
-        ...args.split(' '),
-      ],
+      FlutterSdk.current.dartExePath,
+      [toolPath, ...args],
       throwOnException: throwOnException,
     );
   }
@@ -171,7 +151,7 @@ extension DevToolsProcessManagerExtension on ProcessManager {
     return (
       exitCode: code,
       stdout: processStdout.toString(),
-      stderr: processStderr.toString()
+      stderr: processStderr.toString(),
     );
   }
 
@@ -190,6 +170,52 @@ extension DevToolsProcessManagerExtension on ProcessManager {
   }
 }
 
+Future<Process> startIndependentProcess(
+  CliCommand command, {
+  String? workingDirectory,
+  String? waitForOutput,
+  Duration waitForOutputTimeout = const Duration(minutes: 2),
+  void Function(String line)? onOutput,
+}) async {
+  final commandDisplay = '${workingDirectory ?? ''} > $command';
+  print(commandDisplay);
+  final process = await Process.start(
+    command.exe,
+    command.args,
+    workingDirectory: workingDirectory,
+  );
+
+  if (waitForOutput != null) {
+    final completer = Completer<void>();
+    final stdoutSub = process.stdout.transform(utf8.decoder).listen((line) {
+      print('> [stdout] $line');
+      onOutput?.call(line);
+      if (line.contains(waitForOutput)) {
+        completer.complete();
+      }
+    });
+    final stderrSub = process.stderr.transform(utf8.decoder).listen((line) {
+      print('> [stderr] $line');
+      onOutput?.call(line);
+      if (line.contains(waitForOutput)) {
+        completer.complete();
+      }
+    });
+    await completer.future.timeout(
+      waitForOutputTimeout,
+      onTimeout: () {
+        throw Exception(
+          'Expected output "$waitForOutput" not received before timeout.',
+        );
+      },
+    );
+    await stdoutSub.cancel();
+    await stderrSub.cancel();
+  }
+
+  return process;
+}
+
 String pathFromRepoRoot(String pathFromRoot) {
   return path.join(DevToolsRepo.getInstance().repoPath, pathFromRoot);
 }
@@ -197,11 +223,11 @@ String pathFromRepoRoot(String pathFromRoot) {
 /// Returns the name of the git remote with id [remoteId] in
 /// [workingDirectory].
 ///
-/// When [workingDirectory] is null, this method will look for the remote in
+/// When [workingDirectory] is `null`, this method will look for the remote in
 /// the current directory.
 ///
-/// [remoteId] should have the form <organization>/<repository>.git. For
-/// example: 'flutter/flutter.git' or 'flutter/devtools.git'.
+/// [remoteId] should have the form `<organization>/<repository>.git`.
+/// For example: `'flutter/flutter.git'` or `'flutter/devtools.git'`.
 Future<String> findRemote(
   ProcessManager processManager, {
   required String remoteId,
@@ -209,7 +235,7 @@ Future<String> findRemote(
 }) async {
   print('Searching for a remote that points to $remoteId.');
   final remotesResult = await processManager.runProcess(
-    CliCommand.git(cmd: 'remote -v'),
+    CliCommand.git(['remote', '-v']),
     workingDirectory: workingDirectory,
   );
   final String remotes = remotesResult.stdout;
@@ -223,8 +249,8 @@ Future<String> findRemote(
   try {
     upstreamRemoteResult = remoteRegexpResults.firstWhere(
       (element) =>
-          // ignore: prefer_interpolation_to_compose_strings
-          RegExp(r'' + remoteId + '\$').hasMatch(element.namedGroup('path')!),
+      // ignore: prefer_interpolation_to_compose_strings
+      RegExp(r'' + remoteId + '\$').hasMatch(element.namedGroup('path')!),
     );
   } on StateError {
     throw StateError(

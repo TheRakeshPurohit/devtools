@@ -1,3 +1,8 @@
+<!--
+Copyright 2025 The Flutter Authors
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+-->
 ## What is this?
 
 This is a companion repo to the main Flutter repo. It contains the source code
@@ -6,8 +11,8 @@ the devtools app is in package:devtools_app.
 
 ## Getting started
 
-For documentation on installing and trying out DevTools, please see our
-[docs](https://flutter.dev/docs/development/tools/devtools/).
+For documentation on installing and trying out DevTools, please
+visit the [DevTools docs](https://docs.flutter.dev/tools/devtools/).
 
 ## Feedback
 

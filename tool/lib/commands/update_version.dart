@@ -1,26 +1,21 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import '../utils.dart';
 
-// This script must be executed from the top level devtools/ directory.
-// TODO(kenz): If changes are made to this script, first consider refactoring to
-// use https://github.com/dart-lang/pubspec_parse.
+// All other devtools_* pubspecs have their own versioning strategies, or do not
+// have a version at all (in the case of devtools_test).
+final _devtoolsAppPubspec = File(
+  pathFromRepoRoot('packages/devtools_app/pubspec.yaml'),
+);
 
-// `package:devtools_app_shared`, `package:devtools_extensions` and
-// `package:devtools_shared` have their own versioning strategies. Do not
-// include those packages in the list here.
-final _pubspecs = [
-  'packages/devtools_app/pubspec.yaml',
-  'packages/devtools_test/pubspec.yaml',
-].map((p) => File(pathFromRepoRoot(p))).toList();
-
-final _releaseNoteDirPath =
-    pathFromRepoRoot('packages/devtools_app/release_notes');
+final _releaseNoteDirPath = pathFromRepoRoot(
+  'packages/devtools_app/release_notes',
+);
 
 class UpdateDevToolsVersionCommand extends Command {
   UpdateDevToolsVersionCommand() {
@@ -42,11 +37,11 @@ Future<void> performTheVersionUpdate({
   required String currentVersion,
   required String newVersion,
 }) async {
-  print('Updating pubspecs from $currentVersion to version $newVersion...');
-
-  for (final pubspec in _pubspecs) {
-    writeVersionToPubspec(pubspec, newVersion);
-  }
+  print(
+    'Updating devtools_app/pubspec.yaml from $currentVersion to version '
+    '$newVersion...',
+  );
+  writeVersionToPubspec(_devtoolsAppPubspec, newVersion);
 
   print('Updating devtools.dart to version $newVersion...');
   writeVersionToVersionFile(
@@ -55,9 +50,7 @@ Future<void> performTheVersionUpdate({
   );
 }
 
-Future<void> resetReleaseNotes({
-  required String version,
-}) async {
+Future<void> resetReleaseNotes({required String version}) async {
   print('Resetting the release notes');
   // Clear out the current notes
   final imagesDir = Directory('$_releaseNoteDirPath/images');
@@ -67,24 +60,27 @@ Future<void> resetReleaseNotes({
   await imagesDir.create();
   await File('$_releaseNoteDirPath/images/.gitkeep').create();
 
-  final currentReleaseNotesFile =
-      File('$_releaseNoteDirPath/NEXT_RELEASE_NOTES.md');
+  final currentReleaseNotesFile = File(
+    '$_releaseNoteDirPath/NEXT_RELEASE_NOTES.md',
+  );
   if (currentReleaseNotesFile.existsSync()) {
     await currentReleaseNotesFile.delete();
   }
 
   // Normalize the version number so that it onl
-  final semVerMatch = RegExp(r'^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)')
-      .firstMatch(version);
+  final semVerMatch = RegExp(
+    r'^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)',
+  ).firstMatch(version);
   if (semVerMatch == null) {
     throw 'Version format is unexpected';
   }
-  var major = int.parse(semVerMatch.namedGroup('major')!, radix: 10);
-  var minor = int.parse(semVerMatch.namedGroup('minor')!, radix: 10);
+  final major = int.parse(semVerMatch.namedGroup('major')!, radix: 10);
+  final minor = int.parse(semVerMatch.namedGroup('minor')!, radix: 10);
   final normalizedVersionNumber = '$major.$minor.0';
 
-  final templateFile =
-      File('$_releaseNoteDirPath/helpers/release_notes_template.md');
+  final templateFile = File(
+    '$_releaseNoteDirPath/helpers/release_notes_template.md',
+  );
   final templateFileContents = await templateFile.readAsString();
   await currentReleaseNotesFile.writeAsString(
     templateFileContents.replaceAll(
@@ -95,8 +91,9 @@ Future<void> resetReleaseNotes({
 }
 
 String? incrementVersionByType(String version, String type) {
-  final semVerMatch = RegExp(r'^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)')
-      .firstMatch(version);
+  final semVerMatch = RegExp(
+    r'^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)',
+  ).firstMatch(version);
   if (semVerMatch == null) {
     throw 'Version format is unexpected';
   }
@@ -124,8 +121,7 @@ String? incrementVersionByType(String version, String type) {
 }
 
 String? versionFromPubspecFile() {
-  final pubspec = _pubspecs.first;
-  final lines = pubspec.readAsLinesSync();
+  final lines = _devtoolsAppPubspec.readAsLinesSync();
   for (final line in lines) {
     if (line.startsWith(pubspecVersionPrefix)) {
       return line.substring(pubspecVersionPrefix.length).trim();
@@ -144,26 +140,16 @@ void writeVersionToPubspec(File pubspec, String version) {
       // This is a top level section of the pubspec.
       currentSection = sectionRegExp.firstMatch(line)![0];
     }
-    if (editablePubspecSections.contains(currentSection)) {
-      if (line.startsWith(pubspecVersionPrefix)) {
-        line = [
-          line.substring(
-            0,
-            line.indexOf(pubspecVersionPrefix) + pubspecVersionPrefix.length,
-          ),
-          ' $version',
-        ].join();
-      } else {
-        for (final prefix in devToolsDependencyPrefixes) {
-          if (line.contains(prefix)) {
-            line = [
-              line.substring(0, line.indexOf(prefix) + prefix.length),
-              version,
-            ].join();
-            break;
-          }
-        }
-      }
+    if (currentSection == pubspecVersionPrefix &&
+        line.startsWith(pubspecVersionPrefix)) {
+      line =
+          [
+            line.substring(
+              0,
+              line.indexOf(pubspecVersionPrefix) + pubspecVersionPrefix.length,
+            ),
+            ' $version',
+          ].join();
     }
     revisedLines.add(line);
   }
@@ -172,7 +158,7 @@ void writeVersionToPubspec(File pubspec, String version) {
 }
 
 void writeVersionToVersionFile(File versionFile, String version) {
-  const prefix = 'const String version = ';
+  const prefix = 'const version = ';
   final lines = versionFile.readAsLinesSync();
   final revisedLines = <String>[];
   for (var line in lines) {
@@ -208,8 +194,9 @@ String incrementDevVersion(String currentVersion) {
 }
 
 String stripPreReleases(String currentVersion) {
-  final devVerMatch =
-      RegExp(r'^(?<semver>\d+\.\d+\.\d+).*$').firstMatch(currentVersion);
+  final devVerMatch = RegExp(
+    r'^(?<semver>\d+\.\d+\.\d+).*$',
+  ).firstMatch(currentVersion);
   if (devVerMatch == null) {
     throw 'Could not strip pre-releases from version: $currentVersion';
   } else {
@@ -222,16 +209,6 @@ bool isDevVersion(String version) {
 }
 
 const pubspecVersionPrefix = 'version:';
-const editablePubspecSections = [
-  pubspecVersionPrefix,
-  'dependencies:',
-  'dev_dependencies:',
-];
-
-const devToolsDependencyPrefixes = [
-  'devtools_app: ',
-  'devtools_test: ',
-];
 
 class ManualUpdateCommand extends Command {
   ManualUpdateCommand() {
@@ -258,9 +235,9 @@ class ManualUpdateCommand extends Command {
 
   @override
   Future<void> run() async {
-    final newVersion = argResults!['new-version'].toString();
+    final newVersion = argResults!['new-version'] as String;
     final currentVersion =
-        argResults!['current-version']?.toString() ?? versionFromPubspecFile();
+        (argResults!['current-version'] as String?) ?? versionFromPubspecFile();
 
     if (currentVersion == null) {
       throw 'Could not determine the version, please set the current-version or determine why getting the version is failing.';
@@ -346,8 +323,8 @@ class AutoUpdateCommand extends Command {
 
   @override
   Future<void> run() async {
-    final type = argResults!['type'].toString();
-    final isDryRun = argResults!['dry-run'];
+    final type = argResults!['type'] as String;
+    final isDryRun = argResults!['dry-run'] as bool;
     final currentVersion = versionFromPubspecFile();
     String? newVersion;
     if (currentVersion == null) {
@@ -378,9 +355,7 @@ class AutoUpdateCommand extends Command {
     );
     if (['minor', 'major'].contains(type)) {
       // Only cycle the release notes when doing a minor or major version bump
-      await resetReleaseNotes(
-        version: newVersion,
-      );
+      await resetReleaseNotes(version: newVersion);
     }
   }
 }

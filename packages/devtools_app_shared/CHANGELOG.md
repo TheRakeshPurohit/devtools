@@ -1,3 +1,102 @@
+<!--
+Copyright 2025 The Flutter Authors
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+-->
+## 0.3.0
+* Bump minimum Dart SDK version to `3.6.0`.
+* Bump minimum Flutter SDK version to `3.27.1`.
+* Bump `devtools_shared` dependency to `^11.1.0`.
+* Add `DevToolsIcon` and `AssetImageIcon` widgets.
+* Add `iconAsset` and `iconSize` fields to the `ButtonGroupItemData` class.
+* Add `iconAsset` and `iconSize` fields to the `MaterialIconLabel` class.
+* Add "Supported Flutter versions" policy to the README.
+* Bump `vm_service` dependency to `>=13.0.0 <16.0.0`.
+
+## 0.2.4
+* Add `updateQueryParameter` utility method.
+* Add `jump` parameter to `ScrollController.autoScrollToBottom` extension method.
+* Add `DevToolsAreaPane` widget.
+* Add `InputDecorationSuffixButton.help` factory constructor.
+
+## 0.2.3
+* Bump `web` dependency to `^1.0.0`
+* Bump `pointer_interceptor` dependency to `^0.10.1+1`
+* Add better error handling in `ServiceExtensionManager`.
+
+## 0.2.2
+* Lookup the connected app package root from an expression evaluation when
+the connected app is a Dart or Flutter test.
+* Add a field `logExceptions` to `EvalOnDartLibrary` that defaults to true but
+can be disabled to prevent exceptions from being logged to console.
+* Add `caseInsensitiveFuzzyMatch` extension method on `String`.
+* Add common widgets `DevToolsClearableTextField`, `InputDecorationSuffixButton`,
+and `RoundedDropDownButton`.
+* Add `isEmbedded` utility method.
+* Deprecate `ServiceManager.hasConnection` in favor of
+`ServiceManager.connectedState.value.connected`.
+* Correct the dartdoc for the `ListValueNotifier` class.
+* Deprecate `trackRebuildWidgets` in favor of `countWidgetBuilds`.
+
+## 0.2.1
+* Add `navigateToCode` utility method for jumping to code in IDEs.
+* Add `FlutterEvent` and `DeveloperServiceEvent` constants.
+* Add `connectedAppPackageRoot`, `rootPackageDirectoryForMainIsolate`, and
+`mainIsolateRootLibraryUriAsString` methods to the `ServiceManager` class.
+* Bump minimum Dart SDK version to Dart stable `3.4.3` and minimum Flutter SDK
+version to Flutter stable `3.22.2`.
+
+## 0.2.0-dev.0
+* Add `tooltipWaitExtraLong` to `utils.dart`.
+* Bump `devtools_shared` dependency to `^10.0.0`.
+* Bump `vm_service` dependency to `^14.2.1`.
+* Add a `DTDManager.dispose` method.
+* Fix a race condition during service manager disconnect.
+* Add `IdeThemeQueryParams` extension type for parsing query params.
+* Add `EmbedMode` to enumerate the possible DevTools embedded states.
+* Add `IsolateManager.waitForMainIsolateState` method.
+* Add `LinkTextSpan` and `Link` classes.
+* Add `launchUrl` utility method that has platform agnostic handling for
+launching a URL in the browser, and includes special handling for launching
+URLs when in an embedded VS Code view.
+
+## 0.1.1
+* Update `package:dtd` to `^2.1.0`.
+* Add `DTDManager.projectRoots` method.
+* Bump the minimum Dart and Flutter SDK versions to `3.4.0-282.1.beta` and
+`3.22.0-0.1.pre` respectively.
+* Bump `devtools_shared` to ^8.1.1-dev.0.
+
+## 0.1.0
+* Remove deprecated `background` and `onBackground` values for `lightColorScheme`
+and `darkColorScheme`.
+* Rename `Split` to `SplitPane`.
+* Add `ServiceManager.serviceUri` field to store the connected VM service URI.
+* Update readme to use `pub add` instead of explicit package version.
+* Update `package:dtd` to `^2.0.0`
+* Update `package:devtools_shared` to `^8.1.0`
+* Add `DTDManager.workspaceRoots` method.
+
+## 0.0.10
+* Add `DTDManager` class and export from `service.dart`.
+* Add `showDevToolsDialog` helper method.
+* Add `FlexSplitColumn` and `BlankHeader` common widgets.
+* Bump `package:vm_service` dependency to ^14.0.0.
+
+## 0.0.9
+* Bump `package:web` to `^0.4.1`.
+* Densify overall UI.
+* Add public members: `PaddedDivider.noPadding`, `singleLineDialogTextFieldDecoration`, `extraLargeSpacing`, `regularTextStyleWithColor`.
+* Remove public members: `areaPaneHeaderHeight`, `defaultSwitchHeight`,`
+`dialogTextFieldDecoration`
+* Automatically show tooltips for `DevToolsButton` whose labels have been hidden due to
+hitting a narrow screen threshold, specified by `minScreenWidthForTextBeforeScaling`.
+* Add an optional parameter `borderColor` to `DevToolsToggleButtonGroup`.
+* Add a strict type on `DialogApplyButton.onPressed` and `ToggleableServiceExtension`.
+* Change default styling of `regularTextStyle` to inherit from `TextTheme.bodySmall`.
+* Change default styling of `TextTheme.bodySmall`, `TextTheme.bodyMedium`,
+`TextTheme.titleSmall` in the base theme.
+
 ## 0.0.8
 * Add `ServiceManager.resolvedUriManager` for looking up package and file uris from
 a VM service connection.
@@ -20,7 +119,7 @@ a VM service connection.
 * Add optional parameter `id` to `DisposerMixin.addAutoDisposeListener` and
 `AutoDisposeMixin.addAutoDisposeListener` that allows for tagging a listener
 with a specific id.
-* Add optional parameter `excludeIds` to `DisposerMixin.cancelListeners` and 
+* Add optional parameter `excludeIds` to `DisposerMixin.cancelListeners` and
 `AutoDisposeMixin.cancelListeners` that allows for excluding listeners with
 a specific id from the cancel operation.
 

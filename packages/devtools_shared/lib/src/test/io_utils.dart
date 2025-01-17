@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 // ignore_for_file: avoid_print
 
@@ -17,9 +17,8 @@ Directory getDartPrefsDirectory() {
 
 /// Return the user's home directory.
 String getUserHomeDir() {
-  final String envKey =
-      Platform.operatingSystem == 'windows' ? 'APPDATA' : 'HOME';
-  final String? value = Platform.environment[envKey];
+  final envKey = Platform.operatingSystem == 'windows' ? 'APPDATA' : 'HOME';
+  final value = Platform.environment[envKey];
   return value ?? '.';
 }
 
@@ -83,7 +82,7 @@ mixin IOMixin {
   }) async {
     final processId = process.pid;
     if (debugLogging) {
-      print('Sending SIGTERM to $processId..');
+      print('Sending SIGTERM to $processId.');
     }
     await cancelAllStreamSubscriptions();
     Process.killPid(processId);
@@ -101,7 +100,7 @@ mixin IOMixin {
     // Use sigint here instead of sigkill. See
     // https://github.com/flutter/flutter/issues/117415.
     if (debugLogging) {
-      print('Sending SIGINT to $processId..');
+      print('Sending SIGINT to $processId.');
     }
     Process.killPid(processId, ProcessSignal.sigint);
     return process.exitCode;

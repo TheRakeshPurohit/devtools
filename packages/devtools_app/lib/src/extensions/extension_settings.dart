@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -10,37 +10,48 @@ import 'package:flutter/material.dart';
 
 import '../shared/analytics/analytics.dart' as ga;
 import '../shared/analytics/constants.dart' as gac;
-import '../shared/common_widgets.dart';
+import '../shared/framework/routing.dart';
 import '../shared/globals.dart';
+import '../shared/ui/common_widgets.dart';
+import 'extension_screen.dart';
 
 /// A [ScaffoldAction] that, when clicked, will open a dialog menu for
 /// managing DevTools extension states.
 class ExtensionSettingsAction extends ScaffoldAction {
-  ExtensionSettingsAction({super.key, Color? color})
-      : super(
-          icon: Icons.extension_outlined,
-          tooltip: 'DevTools Extensions',
-          color: color,
-          onPressed: (context) {
-            unawaited(
-              showDialog(
-                context: context,
-                builder: (context) => const ExtensionSettingsDialog(),
-              ),
-            );
-          },
-        );
+  ExtensionSettingsAction({super.key, super.color})
+    : super(
+        iconAsset: 'icons/app_bar/devtools_extensions.png',
+        tooltip: 'DevTools Extensions',
+        onPressed: (context) {
+          unawaited(
+            showDialog(
+              context: context,
+              builder:
+                  (context) => ExtensionSettingsDialog(
+                    extensions:
+                        extensionService
+                            .currentExtensions
+                            .value
+                            .availableExtensions,
+                  ),
+            ),
+          );
+        },
+      );
 }
 
+@visibleForTesting
 class ExtensionSettingsDialog extends StatelessWidget {
-  const ExtensionSettingsDialog({super.key});
+  const ExtensionSettingsDialog({required this.extensions, super.key});
+
+  final List<DevToolsExtensionConfig> extensions;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final availableExtensions = extensionService.availableExtensions.value;
     // This dialog needs a fixed height because it contains a scrollable list.
-    final dialogHeight = scaleByFontFactor(300.0);
+    final dialogHeight =
+        anyTestMode ? scaleByFontFactor(1000.0) : scaleByFontFactor(300.0);
     return DevToolsDialog(
       title: const DialogTitleText('DevTools Extensions'),
       content: SizedBox(
@@ -63,25 +74,22 @@ class ExtensionSettingsDialog extends StatelessWidget {
                   'enabled\n(i.e. do not show tabs for extensions that have no '
                   'preference set).',
             ),
-            const SizedBox(height: defaultSpacing),
+            const PaddedDivider(),
             Expanded(
-              child: availableExtensions.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No extensions available.',
-                        style: theme.textTheme.bodyLarge!.copyWith(
-                          color: theme.colorScheme.subtleTextColor,
+              child:
+                  extensions.isEmpty
+                      ? Center(
+                        child: Text(
+                          'No extensions available.',
+                          style: theme.subtleTextStyle,
                         ),
-                      ),
-                    )
-                  : _ExtensionsList(extensions: availableExtensions),
+                      )
+                      : _ExtensionsList(extensions: extensions),
             ),
           ],
         ),
       ),
-      actions: const [
-        DialogCloseButton(),
-      ],
+      actions: const [DialogCloseButton()],
     );
   }
 }
@@ -118,9 +126,9 @@ class __ExtensionsListState extends State<_ExtensionsList> {
       child: ListView.builder(
         controller: scrollController,
         itemCount: widget.extensions.length,
-        itemBuilder: (context, index) => ExtensionSetting(
-          extension: widget.extensions[index],
-        ),
+        itemBuilder:
+            (context, index) =>
+                ExtensionSetting(extension: widget.extensions[index]),
       ),
     );
   }
@@ -137,36 +145,36 @@ class ExtensionSetting extends StatelessWidget {
     final buttonStates = [
       (
         title: 'Enabled',
-        isSelected: (ExtensionEnabledState state) =>
-            state == ExtensionEnabledState.enabled,
+        isSelected:
+            (ExtensionEnabledState state) =>
+                state == ExtensionEnabledState.enabled,
         onPressed: () {
           ga.select(
             gac.DevToolsExtensionEvents.extensionSettingsId.name,
             gac.DevToolsExtensionEvents.extensionEnableManual(extension),
           );
           unawaited(
-            extensionService.setExtensionEnabledState(
-              extension,
-              enable: true,
-            ),
+            extensionService.setExtensionEnabledState(extension, enable: true),
           );
         },
       ),
       (
         title: 'Disabled',
-        isSelected: (ExtensionEnabledState state) =>
-            state == ExtensionEnabledState.disabled,
+        isSelected:
+            (ExtensionEnabledState state) =>
+                state == ExtensionEnabledState.disabled,
         onPressed: () {
           ga.select(
             gac.DevToolsExtensionEvents.extensionSettingsId.name,
             gac.DevToolsExtensionEvents.extensionDisableManual(extension),
           );
           unawaited(
-            extensionService.setExtensionEnabledState(
-              extension,
-              enable: false,
-            ),
+            extensionService.setExtensionEnabledState(extension, enable: false),
           );
+          final router = DevToolsRouterDelegate.of(context);
+          if (router.currentConfiguration?.page == extension.screenId) {
+            router.navigateHome(clearScreenParam: true);
+          }
         },
       ),
     ];

@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -9,15 +9,14 @@ import 'package:devtools_app_shared/utils.dart';
 import 'package:flutter/material.dart';
 
 import '../../shared/analytics/constants.dart' as gac;
-import '../../shared/common_widgets.dart';
 import '../../shared/feature_flags.dart';
 import '../../shared/globals.dart';
+import '../../shared/ui/common_widgets.dart';
 import '../../shared/ui/tab.dart';
-import '../../shared/utils.dart';
+import '../../shared/utils/utils.dart';
 import 'panes/flutter_frames/flutter_frame_model.dart';
 import 'panes/flutter_frames/flutter_frames_controller.dart';
 import 'panes/frame_analysis/frame_analysis.dart';
-import 'panes/raster_stats/raster_stats.dart';
 import 'panes/rebuild_stats/rebuild_stats.dart';
 import 'panes/timeline_events/timeline_events_view.dart';
 import 'performance_controller.dart';
@@ -58,33 +57,31 @@ class _TabbedPerformanceViewState extends State<TabbedPerformanceView>
 
   @override
   Widget build(BuildContext context) {
-    final isOffline = offlineController.offlineMode.value;
+    final isOffline = offlineDataController.showingOfflineData.value;
     final isFlutterApp =
         serviceConnection.serviceManager.connectedApp!.isFlutterAppNow!;
 
     var showFrameAnalysis = isFlutterApp;
-    var showRasterStats = isFlutterApp;
-    var showRebuildStats = FeatureFlags.widgetRebuildstats && isFlutterApp;
+    var showRebuildStats = FeatureFlags.widgetRebuildStats && isFlutterApp;
     final offlineData = controller.offlinePerformanceData;
     if (isOffline) {
       final hasOfflineData = offlineData != null;
       showFrameAnalysis =
           showFrameAnalysis && hasOfflineData && offlineData.frames.isNotEmpty;
-      showRasterStats =
-          showRasterStats && hasOfflineData && offlineData.rasterStats != null;
-      showRebuildStats = showRebuildStats &&
+      showRebuildStats =
+          showRebuildStats &&
           hasOfflineData &&
-          offlineData.rebuildCountModel.isNotEmpty;
+          offlineData.rebuildCountModel != null;
     }
 
     final tabsAndControllers = _generateTabs(
       showFrameAnalysis: showFrameAnalysis,
-      showRasterStats: showRasterStats,
       showRebuildStats: showRebuildStats,
     );
-    final tabs = tabsAndControllers
-        .map((t) => (tab: t.tab, tabView: t.tabView))
-        .toList();
+    final tabs =
+        tabsAndControllers
+            .map((t) => (tab: t.tab, tabView: t.tabView))
+            .toList();
     final featureControllers =
         tabsAndControllers.map((t) => t.featureController).toList();
 
@@ -115,16 +112,17 @@ class _TabbedPerformanceViewState extends State<TabbedPerformanceView>
   }
 
   List<
-      ({
-        DevToolsTab tab,
-        Widget tabView,
-        PerformanceFeatureController? featureController,
-      })> _generateTabs({
+    ({
+      DevToolsTab tab,
+      Widget tabView,
+      PerformanceFeatureController? featureController,
+    })
+  >
+  _generateTabs({
     required bool showFrameAnalysis,
-    required bool showRasterStats,
     required bool showRebuildStats,
   }) {
-    if (showFrameAnalysis || showRasterStats || showRebuildStats) {
+    if (showFrameAnalysis || showRebuildStats) {
       assert(serviceConnection.serviceManager.connectedApp!.isFlutterAppNow!);
     }
     return [
@@ -132,42 +130,32 @@ class _TabbedPerformanceViewState extends State<TabbedPerformanceView>
         (
           tab: _buildTab(tabName: 'Frame Analysis'),
           tabView: KeepAliveWrapper(
-            child: _selectedFlutterFrame != null
-                ? FlutterFrameAnalysisView(
-                    frameAnalysis: _selectedFlutterFrame!.frameAnalysis,
-                    enhanceTracingController:
-                        controller.enhanceTracingController,
-                    rebuildCountModel: controller.data!.rebuildCountModel,
-                  )
-                : const Center(
-                    child: Text('Select a frame above to view analysis data.'),
-                  ),
+            child:
+                _selectedFlutterFrame != null
+                    ? FlutterFrameAnalysisView(
+                      frame: _selectedFlutterFrame!,
+                      enhanceTracingController:
+                          controller.enhanceTracingController,
+                      rebuildCountModel: controller.rebuildCountModel,
+                      displayRefreshRateNotifier:
+                          controller.flutterFramesController.displayRefreshRate,
+                    )
+                    : const CenteredMessage(
+                      message: 'Select a frame above to view analysis data.',
+                    ),
           ),
           featureController: null,
-        ),
-      if (showRasterStats)
-        (
-          tab: _buildTab(tabName: 'Raster Stats'),
-          tabView: KeepAliveWrapper(
-            child: Center(
-              child: RasterStatsView(
-                rasterStatsController: controller.rasterStatsController,
-                impellerEnabled: controller.impellerEnabled,
-              ),
-            ),
-          ),
-          featureController: controller.rasterStatsController,
         ),
       if (showRebuildStats)
         (
           tab: _buildTab(tabName: 'Rebuild Stats'),
           tabView: KeepAliveWrapper(
             child: RebuildStatsView(
-              model: controller.data!.rebuildCountModel,
+              model: controller.rebuildCountModel,
               selectedFrame: controller.flutterFramesController.selectedFrame,
             ),
           ),
-          featureController: null,
+          featureController: controller.rebuildStatsController,
         ),
       (
         tab: _buildTab(

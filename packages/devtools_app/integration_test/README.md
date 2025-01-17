@@ -1,8 +1,13 @@
+<!--
+Copyright 2025 The Flutter Authors
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+-->
 # Instructions for running a DevTools integration test
 
 ## Set up ChromeDriver (one time only)
 
-1. Follow the instructions [here](https://docs.flutter.dev/cookbook/testing/integration/introduction#5b-web) to download ChromeDriver.
+1. Follow the instructions [here](https://flutter.dev/to/integration-test-on-web) to download ChromeDriver.
 
 2. Add `chromedriver` to your PATH by modifying your `.bash_profile` or `.zshrc`:
 
@@ -27,7 +32,8 @@ xattr -d com.apple.quarantine ~/path/to/chromedriver
 If you update your Chrome version (or it updates automatically), you may need to update your `chromedriver`
 executable as well. To do this, delete your existing `chromedriver` executable (you can find this by
 running `which chromedriver`). Then, download the proper `chromedriver` zip file from
-[here](https://googlechromelabs.github.io/chrome-for-testing/#stable) based on your platform, unzip the
+[here](https://googlechromelabs.github.io/chrome-for-testing/#stable) based on your platform. Copy the
+link for your platform, open in a new tab, and then the zip file will be downloaded. Unzip the
 folder, and move the executable to the same location that you just deleted the previous executable from.
 
 If you are on Mac, you will likely need to run this command again on the new executable:

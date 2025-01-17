@@ -1,10 +1,11 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:core';
 
+import 'package:devtools_shared/devtools_shared.dart';
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart' hide Error;
@@ -43,11 +44,10 @@ class IsolateState {
 
   void dispose() {
     _isolateNow = null;
-    if (!_isolateLoadCompleter.isCompleted) {
-      _isolateLoadCompleter.complete(null);
-    } else {
-      _isolateLoadCompleter = Completer()..complete(null);
-    }
+    _isolateLoadCompleter.safeComplete(
+      null,
+      () => _isolateLoadCompleter = Completer()..complete(null),
+    );
   }
 
   void handleDebugEvent(String? kind) {

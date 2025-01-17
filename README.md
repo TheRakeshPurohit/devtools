@@ -1,3 +1,8 @@
+<!--
+Copyright 2025 The Flutter Authors
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+-->
 # Dart & Flutter DevTools
 
 [![Build Status](https://github.com/flutter/devtools/workflows/devtools/badge.svg)](https://github.com/flutter/devtools/actions)
@@ -5,12 +10,12 @@
 
 ## What is this?
 
-[Dart & Flutter DevTools](https://flutter.dev/docs/development/tools/devtools/) is a suite of performance tools for Dart and Flutter.
+[Dart & Flutter DevTools](https://docs.flutter.dev/tools/devtools) is a suite of performance tools for Dart and Flutter.
 
 ## Getting started
 
 For documentation on installing and trying out DevTools, please see our
-[docs](https://flutter.dev/docs/development/tools/devtools/).
+[docs](https://docs.flutter.dev/tools/devtools).
 
 ## Contributing and development
 

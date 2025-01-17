@@ -1,3 +1,81 @@
+<!--
+Copyright 2025 The Flutter Authors
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+-->
+## 0.3.0
+* Fix `build_and_copy` command by removing deprecated `--web-renderer` option.
+* Bump minimum Dart SDK version to `3.6.0` and minimum Flutter SDK version
+to `3.27.1`.
+* Bump `devtools_app_shared` dependency to `0.3.0`.
+* Bump `devtools_shared` dependency to `11.1.0`.
+* Bump `vm_service` dependency to `>=13.0.0 <16.0.0`.
+* Clarify VS Code configuration in `README.md`.
+* Add "Supported Flutter versions" policy to the README.
+
+## 0.3.0-dev.0
+* Add `ExtensionManager.copyToClipboard` method.
+* Add `DevToolsExtensionEventType.copyToClipboard` enum type.
+* Add `CopyToClipboardExtensionEvent` extension event type. 
+* Bump `web` dependency to `^1.0.0`.
+
+## 0.2.2
+* Load the IDE Theme from the extension URL instead of creating
+a placeholder `IdeTheme` object.
+
+## 0.2.1
+* Add testimonies from extension authors to the `README.md`.
+* Add an integration test to the example app, `app_that_uses_foo`.
+* Bump minimum Dart SDK version to Dart stable `3.4.3` and minimum Flutter SDK
+version to Flutter stable `3.22.2`.
+
+## 0.2.0-dev.0
+* Deprecate the `DevToolsExtension.requiresRunningApplication` field.
+* Update `extension_config_spec.md` to include an optional field `requiresConnection`.
+* Bump `devtools_shared` dependency to `^10.0.0`.
+* Fix file locations in the `dart_foo` extension example.
+* Bump `vm_service` dependency to `^14.2.1`.
+* Dispose `DTDManager` when the `DevToolsExtension` widget state is disposed.
+* Add an example of a standalone extension.
+* Add examples of Dart and Flutter tests that can be ran and connected to
+available DevTools extensions.
+* Add an example of interacting with the Dart Tooling Daemon from a DevTools extension.
+
+## 0.1.1
+* Update the simulated environment help dialogs with information about the
+new `--print-dtd` CLI flag.
+* Bump the minimum Dart and Flutter SDK versions to `3.4.0-282.1.beta` and
+`3.22.0-0.1.pre` respectively.
+* Bump `devtools_app_shared` to ^0.1.1-dev.0
+* Bump `devtools_shared` to ^8.1.1-dev.0
+
+## 0.1.0
+* Bump `devtools_app_shared` to ^0.1.0
+* Update readme to use `pub add` instead of explicit package version.
+* Bump `devtools_shared` to ^8.1.0
+
+## 0.0.14
+* Add a global `dtdManager` for interacting with the Dart Tooling Daemon.
+* Add support for connecting to the Dart Tooling Daemon from the
+simulated DevTools environment.
+* Add help buttons to the VM Service and DTD connection text fields in the
+simulated DevTools environment.
+* Bump `package:vm_service` dependency to ^14.0.0.
+* Refactor `example` directory to support more package examples.
+* Add an example of providing an extension from a pure Dart package.
+* Update the `example/README.md`.
+* Add a `devtools_extensions validate` for validating extension requirements.
+* Update the `README.md` to make it clear that you can build a DevTools
+extension as a standalone tool.
+
+## 0.0.13
+* Bump `package:web` to `^0.4.1`.
+* Fix `README.md` instructions for adding a `.pubignore` file.
+* Make Simulated DevTools Environment Panel collapsible.
+
+## 0.0.12
+* Fix a bug preventing Dart server apps from connecting to DevTools extensions.
+
 ## 0.0.11
 * Add error messaging when `extensionManager` or `serviceManager` are accessed before they
 are initialized.

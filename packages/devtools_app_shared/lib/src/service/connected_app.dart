@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -180,7 +180,7 @@ class ConnectedApp {
             'Timed out trying to fetch flutter version from '
             '`ConnectedApp.initializeValues`.',
           );
-          return Future<FlutterVersion?>.value();
+          return Future<FlutterVersion?>.value(FlutterVersion.unknown());
         },
       );
       flutterVersionServiceListenable.removeListener(listener);
@@ -195,7 +195,7 @@ class ConnectedApp {
         isDartWebAppKey: isDartWebAppNow,
         isRunningOnDartVMKey: isRunningOnDartVM,
         operatingSystemKey: operatingSystem,
-        if (flutterVersionNow != null)
+        if (flutterVersionNow != null && !flutterVersionNow!.unknown)
           flutterVersionKey: flutterVersionNow!.version,
       };
 }

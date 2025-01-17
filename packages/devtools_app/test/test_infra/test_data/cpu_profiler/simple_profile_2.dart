@@ -1,8 +1,8 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
-final Map<String, dynamic> simpleCpuProfile2 = {
+final simpleCpuProfile2 = <String, Object?>{
   'type': '_CpuProfileTimeline',
   'samplePeriod': 50,
   'stackDepth': 128,
@@ -13,7 +13,7 @@ final Map<String, dynamic> simpleCpuProfile2 = {
   'traceEvents': _profileTraceEvents,
 };
 
-final _profileStackFrames = {
+final _profileStackFrames = <String, Object?>{
   '140357727781376-1': {
     'category': 'Dart',
     'name': 'A',
@@ -88,7 +88,7 @@ final _profileStackFrames = {
   },
 };
 
-final List<Map<String, dynamic>> _profileTraceEvents = [
+final _profileTraceEvents = <Map<String, Object?>>[
   {
     'ph': 'P',
     'name': '',
@@ -96,10 +96,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 0,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-1',
   },
   {
@@ -109,10 +106,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 1000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-2',
   },
   {
@@ -122,10 +116,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 2000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-7',
   },
   {
@@ -135,10 +126,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 3000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-7',
   },
   {
@@ -148,10 +136,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 4000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-3',
   },
   {
@@ -161,10 +146,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 5000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-3',
   },
   {
@@ -174,10 +156,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 6000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-3',
   },
   {
@@ -187,10 +166,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 7000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-8',
   },
   {
@@ -200,10 +176,7 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 8000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-5',
   },
   {
@@ -213,15 +186,12 @@ final List<Map<String, dynamic>> _profileTraceEvents = [
     'tid': 42247,
     'ts': 9000,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-9',
   },
 ];
 
-const String simpleProfile2Golden = '''
+const simpleProfile2Golden = '''
   A - children: 3 - excl: 1 - incl: 10
     B - children: 1 - excl: 1 - incl: 4
       C - children: 0 - excl: 3 - incl: 3
@@ -233,7 +203,7 @@ const String simpleProfile2Golden = '''
         C - children: 0 - excl: 1 - incl: 1
 ''';
 
-const String simpleProfile2MethodTableGolden = '''
+const simpleProfile2MethodTableGolden = '''
 A - (package:my_app/src/a.dart:111) (10 samples)
   Callers:
     C - (package:my_app/src/c.dart:333) - 100.00%

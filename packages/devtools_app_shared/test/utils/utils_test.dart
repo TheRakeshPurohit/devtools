@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app_shared/utils.dart';
 import 'package:flutter/material.dart';
@@ -92,6 +92,24 @@ void main() {
       expect(toCssHexColor(Colors.black), equals('#000000ff'));
       expect(toCssHexColor(Colors.white), equals('#ffffffff'));
       expect(toCssHexColor(const Color(0xFFAABBCC)), equals('#aabbccff'));
+    });
+  });
+
+  group('StringExtension', () {
+    test('fuzzyMatch', () {
+      const str = 'hello_world_file';
+      expect(str.caseInsensitiveFuzzyMatch('h'), isTrue);
+      expect(str.caseInsensitiveFuzzyMatch('o_'), isTrue);
+      expect(str.caseInsensitiveFuzzyMatch('hw'), isTrue);
+      expect(str.caseInsensitiveFuzzyMatch('hwf'), isTrue);
+      expect(str.caseInsensitiveFuzzyMatch('_e'), isTrue);
+      expect(str.caseInsensitiveFuzzyMatch('HWF'), isTrue);
+      expect(str.caseInsensitiveFuzzyMatch('_E'), isTrue);
+
+      expect(str.caseInsensitiveFuzzyMatch('hwfh'), isFalse);
+      expect(str.caseInsensitiveFuzzyMatch('hfw'), isFalse);
+      expect(str.caseInsensitiveFuzzyMatch('gello'), isFalse);
+      expect(str.caseInsensitiveFuzzyMatch('files'), isFalse);
     });
   });
 }

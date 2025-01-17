@@ -1,6 +1,6 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:flutter/material.dart';
 
@@ -8,10 +8,10 @@ void main() => runApp(const OverflowingApp());
 
 class OverflowingApp extends StatefulWidget {
   const OverflowingApp({
-    Key? key,
+    super.key,
     this.initialRoute,
     this.isTestMode = false,
-  }) : super(key: key);
+  });
 
   final bool isTestMode;
   final String? initialRoute;

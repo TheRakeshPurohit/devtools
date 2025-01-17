@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:collection/collection.dart';
 import 'package:devtools_app_shared/utils.dart';
@@ -39,13 +39,12 @@ class ChartController extends DisposableController
     this.displayXLabels = true,
     this.displayYLabels = true,
     this.name,
-    List<int>? sharedLabelimestamps,
+    List<int>? sharedLabelTimestamps,
   }) {
-    // TODO(terry): Compute dynamically based on X-axis labels text height.
     bottomPadding = !displayXLabels ? 0.0 : 40.0;
 
-    if (sharedLabelimestamps != null) {
-      labelTimestamps = sharedLabelimestamps;
+    if (sharedLabelTimestamps != null) {
+      labelTimestamps = sharedLabelTimestamps;
       _labelsShared = true;
     }
   }
@@ -178,7 +177,7 @@ class ChartController extends DisposableController
 
   /// zoomDuration values of:
   ///     null implies all
-  ///     Duration() imples live (default)
+  ///     Duration() implies live (default)
   ///     Duration(minutes: 5) implies 5 minute interval
   Duration? _zoomDuration = const Duration();
 
@@ -222,9 +221,9 @@ class ChartController extends DisposableController
       if (lastDT.difference(firstDT).inMinutes >= duration.inMinutes) {
         // Grab the duration in minutes passed in.
         final startOfLastNMinutes =
-            // We need this cast to be able to return null if nothing is found.
-            // ignore: unnecessary_cast
-            timestamps.reversed.firstWhereOrNull((timestamp) {
+        // We need this cast to be able to return null if nothing is found.
+        // ignore: unnecessary_cast
+        timestamps.reversed.firstWhereOrNull((timestamp) {
           final currentDT = DateTime.fromMillisecondsSinceEpoch(timestamp);
           final diff = lastDT.difference(currentDT);
           if (diff.inMinutes >= duration.inMinutes) {
@@ -234,9 +233,10 @@ class ChartController extends DisposableController
           return false;
         });
 
-        final ticksVisible = startOfLastNMinutes != null
-            ? timestampsLength - timestamps.indexOf(startOfLastNMinutes)
-            : timestampsLength + 1;
+        final ticksVisible =
+            startOfLastNMinutes != null
+                ? timestampsLength - timestamps.indexOf(startOfLastNMinutes)
+                : timestampsLength + 1;
         _tickWidth = canvasChartWidth / ticksVisible;
       } else {
         // No but lets scale x-axis based on the last two timestamps diffs we have.
@@ -246,8 +246,9 @@ class ChartController extends DisposableController
         // Enough data (at least 2 points) to know how many ticks for the duration.
         if (length > 1) {
           final lastTS = DateTime.fromMillisecondsSinceEpoch(timestamps.last);
-          final previousTS =
-              DateTime.fromMillisecondsSinceEpoch(timestamps[length - 2]);
+          final previousTS = DateTime.fromMillisecondsSinceEpoch(
+            timestamps[length - 2],
+          );
           final diffTS = lastTS.difference(previousTS);
           final ticksPerMinute = oneMinuteInMs / diffTS.inMilliseconds;
           final ticksVisible = ticksPerMinute * duration.inMinutes;
@@ -259,7 +260,7 @@ class ChartController extends DisposableController
     _zoomDuration = duration;
     computeZoomRatio();
 
-    // All tick labels need to be recompted.
+    // All tick labels need to be recomputed.
     computeChartArea();
     computeLabelInterval();
 
@@ -322,7 +323,7 @@ class ChartController extends DisposableController
     buildLabelTimestamps(refresh: true);
   }
 
-  void buildLabelTimestamps({refresh = false}) {
+  void buildLabelTimestamps({bool refresh = false}) {
     if (isLabelsShared || timestamps.isEmpty) return;
 
     if (refresh) {
@@ -359,10 +360,12 @@ class ChartController extends DisposableController
     if (labelTimestamps.isEmpty) return;
 
     final rightLabelTimestamp = labelTimestamps.last;
-    final rightMostLabelDT =
-        DateTime.fromMillisecondsSinceEpoch(rightLabelTimestamp);
-    final rightMostTimestampDT =
-        DateTime.fromMillisecondsSinceEpoch(timestamps.last);
+    final rightMostLabelDT = DateTime.fromMillisecondsSinceEpoch(
+      rightLabelTimestamp,
+    );
+    final rightMostTimestampDT = DateTime.fromMillisecondsSinceEpoch(
+      timestamps.last,
+    );
 
     final nSeconds =
         rightMostTimestampDT.difference(rightMostLabelDT).inSeconds;
@@ -387,7 +390,7 @@ class ChartController extends DisposableController
 
   /// Clear all data in the chart.
   void reset() {
-    for (var trace in traces) {
+    for (final trace in traces) {
       trace.clearData();
     }
     timestampsClear();
@@ -430,7 +433,7 @@ class ChartController extends DisposableController
   double yPositionToYCanvasCoord(double y) => -yPosition(y);
 
   Trace trace(int index) {
-    assert(index < traces.length);
+    assert(index < traces.length, '$index, ${traces.length}');
     return traces[index];
   }
 
@@ -550,6 +553,10 @@ class ChartController extends DisposableController
     // return the first timestamp.
     return timestampedIndex >= 0 ? timestampedIndex : 0;
   }
+
+  void addDataToTrace(int traceIndex, Data data) {
+    trace(traceIndex).addDatum(data);
+  }
 }
 
 /// Location (index to the data & timestamp of the plotted values) where the user
@@ -559,12 +566,12 @@ class TapLocation {
   TapLocation(this.tapDownDetails, this.timestamp, this.index);
 
   /// Copy of TapLocation w/o the detail, implies not where tap occurred
-  /// but the multiple charts tied to the same timeline should be hilighted
+  /// but the multiple charts tied to the same timeline should be highlighted
   /// (selection point).
   TapLocation.copy(TapLocation original)
-      : tapDownDetails = null,
-        timestamp = original.timestamp,
-        index = original.index;
+    : tapDownDetails = null,
+      timestamp = original.timestamp,
+      index = original.index;
 
   final TapDownDetails? tapDownDetails;
 

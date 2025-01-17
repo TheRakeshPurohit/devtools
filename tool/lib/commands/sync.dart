@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:args/command_runner.dart';
 import 'package:io/io.dart';
@@ -19,10 +19,11 @@ class SyncCommand extends Command {
   Future run() async {
     final processManager = ProcessManager();
     await processManager.runProcess(
-      CliCommand.from('git', ['pull', 'upstream', 'master']),
+      CliCommand.git(['pull', 'upstream', 'master']),
     );
+    await processManager.runProcess(CliCommand.tool(['update-flutter-sdk']));
     await processManager.runProcess(
-      CliCommand.tool('generate-code --upgrade'),
+      CliCommand.tool(['generate-code', '--upgrade']),
     );
   }
 }

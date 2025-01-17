@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be found
-// in the LICENSE file.
+// Copyright 2020 The Flutter Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 part of 'server.dart';
 
@@ -10,11 +10,11 @@ part of 'server.dart';
 Future<String> getLastShownReleaseNotesVersion() async {
   String version = '';
   if (isDevToolsServerAvailable) {
-    final resp = await request(apiGetLastReleaseNotesVersion);
+    final resp = await request(ReleaseNotesApi.getLastReleaseNotesVersion);
     if (resp?.statusOk ?? false) {
       version = json.decode(resp!.body);
     } else {
-      logWarning(resp, apiGetLastReleaseNotesVersion);
+      logWarning(resp, ReleaseNotesApi.getLastReleaseNotesVersion);
     }
   }
   return version;
@@ -26,11 +26,11 @@ Future<String> getLastShownReleaseNotesVersion() async {
 Future<void> setLastShownReleaseNotesVersion(String version) async {
   if (isDevToolsServerAvailable) {
     final resp = await request(
-      '$apiSetLastReleaseNotesVersion'
-      '?$lastReleaseNotesVersionPropertyName=$version',
+      '${ReleaseNotesApi.setLastReleaseNotesVersion}'
+      '?$apiParameterValueKey=$version',
     );
-    if (resp == null || !resp.statusOk || !json.decode(resp.body)) {
-      logWarning(resp, apiSetLastReleaseNotesVersion, resp?.body);
+    if (resp == null || !resp.statusOk) {
+      logWarning(resp, ReleaseNotesApi.setLastReleaseNotesVersion);
     }
   }
 }

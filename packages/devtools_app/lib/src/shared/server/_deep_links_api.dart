@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be found
-// in the LICENSE file.
+// Copyright 2020 The Flutter Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 part of 'server.dart';
 
@@ -8,13 +8,11 @@ Future<List<String>> requestAndroidBuildVariants(String path) async {
   if (isDevToolsServerAvailable) {
     final uri = Uri(
       path: DeeplinkApi.androidBuildVariants,
-      queryParameters: {
-        DeeplinkApi.deeplinkRootPathPropertyName: path,
-      },
+      queryParameters: {DeeplinkApi.deeplinkRootPathPropertyName: path},
     );
     final resp = await request(uri.toString());
     if (resp?.statusOk ?? false) {
-      return json.decode(resp!.body);
+      return (jsonDecode(resp!.body) as List).cast<String>();
     } else {
       logWarning(resp, DeeplinkApi.androidBuildVariants);
     }
@@ -35,22 +33,23 @@ Future<AppLinkSettings> requestAndroidAppLinkSettings(
       },
     );
     final resp = await request(uri.toString());
-    if (resp?.statusOk ?? false) {
-      return AppLinkSettings.fromJson(resp!.body);
-    } else {
-      logWarning(resp, DeeplinkApi.androidAppLinkSettings);
+    if (resp != null) {
+      if (resp.statusOk) {
+        return AppLinkSettings.fromJson(resp.body);
+      } else {
+        logWarning(resp, DeeplinkApi.androidAppLinkSettings);
+        return AppLinkSettings.fromErrorJson(resp.body.toString());
+      }
     }
   }
-  return AppLinkSettings.empty;
+  return AppLinkSettings.error('DevTools server is not available');
 }
 
 Future<XcodeBuildOptions> requestIosBuildOptions(String path) async {
   if (isDevToolsServerAvailable) {
     final uri = Uri(
       path: DeeplinkApi.iosBuildOptions,
-      queryParameters: {
-        DeeplinkApi.deeplinkRootPathPropertyName: path,
-      },
+      queryParameters: {DeeplinkApi.deeplinkRootPathPropertyName: path},
     );
     final resp = await request(uri.toString());
     if (resp?.statusOk ?? false) {

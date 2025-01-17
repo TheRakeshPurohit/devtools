@@ -1,24 +1,25 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Stack;
 
 import '../../../shared/primitives/listenable.dart';
-import '../../../shared/tree.dart';
 import '../../diagnostics/dart_object_node.dart';
 import '../../diagnostics/tree_builder.dart';
+import '../../ui/tree_view.dart';
 import 'display_provider.dart';
 
 class ExpandableVariable extends StatelessWidget {
   const ExpandableVariable({
-    Key? key,
+    super.key,
     this.variable,
     this.dataDisplayProvider,
     this.isSelectable = true,
-  }) : super(key: key);
+    this.onCopy,
+  });
 
   @visibleForTesting
   static const emptyExpandableVariableKey = Key('empty expandable variable');
@@ -27,6 +28,7 @@ class ExpandableVariable extends StatelessWidget {
   final Widget Function(DartObjectNode, void Function())? dataDisplayProvider;
 
   final bool isSelectable;
+  final void Function(DartObjectNode)? onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -37,21 +39,22 @@ class ExpandableVariable extends StatelessWidget {
     // TODO(kenz): preserve expanded state of tree on switching frames and
     // on stepping.
     return TreeView<DartObjectNode>(
-      dataRootsListenable:
-          FixedValueListenable<List<DartObjectNode>>([variable]),
-      dataDisplayProvider: dataDisplayProvider ??
+      dataRootsListenable: FixedValueListenable<List<DartObjectNode>>([
+        variable,
+      ]),
+      dataDisplayProvider:
+          dataDisplayProvider ??
           (variable, onPressed) => DisplayProvider(
-                variable: variable,
-                onTap: onPressed,
-              ),
+            variable: variable,
+            onTap: onPressed,
+            onCopy: onCopy,
+          ),
       onItemSelected: onItemPressed,
       isSelectable: isSelectable,
     );
   }
 
-  Future<void> onItemPressed(
-    DartObjectNode v,
-  ) async {
+  Future<void> onItemPressed(DartObjectNode v) async {
     // On expansion, lazily build the variables tree for performance reasons.
     if (v.isExpanded) {
       await Future.wait(v.children.map(buildVariablesTree));

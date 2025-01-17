@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:io';
@@ -11,12 +11,15 @@ import 'package:path/path.dart' as path;
 
 import '../utils.dart';
 
+const _runIdArg = 'run-id';
+
 /// A command for downloading and applying golden fixes, when they are broken.
 class FixGoldensCommand extends Command {
   FixGoldensCommand() {
     argParser.addOption(
-      'run-id',
-      help: 'The ID of the workflow run where the goldens are failing. '
+      _runIdArg,
+      help:
+          'The ID of the workflow run where the goldens are failing. '
           'e.g.https://github.com/flutter/devtools/actions/runs/<run-id>/job/16691428186',
       valueHelp: '12345',
       mandatory: true,
@@ -36,32 +39,30 @@ class FixGoldensCommand extends Command {
     // Change the CWD to the repo root
     Directory.current = pathFromRepoRoot("");
 
-    final runId = argResults!['run-id']!;
+    final runId = argResults![_runIdArg] as String;
     final tmpDownloadDir = await Directory.systemTemp.createTemp();
     try {
       print('Downloading the artifacts to ${tmpDownloadDir.path}');
       await processManager.runProcess(
-        CliCommand.from(
-          'gh',
-          [
-            'run',
-            'download',
-            runId,
-            '-p',
-            '*golden_image_failures*',
-            '-D',
-            tmpDownloadDir.path,
-          ],
-        ),
+        CliCommand('gh', [
+          'run',
+          'download',
+          runId,
+          '-p',
+          '*golden_image_failures*',
+          '-R',
+          'github.com/flutter/devtools',
+          '-D',
+          tmpDownloadDir.path,
+        ]),
       );
 
       final downloadedGoldens = tmpDownloadDir
           .listSync(recursive: true)
           .where((e) => e.path.endsWith('testImage.png'));
-      final allLocalGoldenPngs =
-          Directory(pathFromRepoRoot("packages/devtools_app/test/"))
-              .listSync(recursive: true)
-            ..where((e) => e.path.endsWith('.png'));
+      final allLocalGoldenPngs = Directory(
+        pathFromRepoRoot("packages/devtools_app/test/"),
+      ).listSync(recursive: true).where((e) => e.path.endsWith('.png'));
 
       for (final downloadedGolden in downloadedGoldens) {
         final downloadedGoldenBaseName = path.basename(downloadedGolden.path);

@@ -1,35 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-/// Class that converts enum value names to enum entries and vice versa.
-///
-/// Example usage:
-/// enum Color {
-///   red, green, blue
-/// }
-/// ```
-///   EnumUtils<Color> colorUtils = EnumUtils(Color.values);
-///   colorUtils.getEnum('red'); // returns Color.red
-///   colorUtils.getName(Color.red); // returns 'red'
-/// ```
-class EnumUtils<T extends Enum> {
-  EnumUtils(List<T> enumValues) {
-    for (var val in enumValues) {
-      final enumDescription = val.name;
-      _lookupTable[enumDescription] = val;
-      _reverseLookupTable[val] = enumDescription;
-    }
-  }
-
-  final Map<String, T> _lookupTable = {};
-  final Map<T, String> _reverseLookupTable = {};
-
-  T? enumEntry(String? enumName) =>
-      enumName != null ? _lookupTable[enumName] : null;
-
-  String? name(T enumEntry) => _reverseLookupTable[enumEntry];
-}
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 mixin EnumIndexOrdering<T extends Enum> on Enum implements Comparable<T> {
   @override

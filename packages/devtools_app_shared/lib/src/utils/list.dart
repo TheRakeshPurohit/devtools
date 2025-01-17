@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:collection';
 import 'dart:math';
@@ -9,9 +9,8 @@ import 'package:flutter/foundation.dart';
 
 /// A [ChangeNotifier] that holds a list of data.
 ///
-/// This class also exposes methods to interact with the data. By default,
-/// listeners are notified whenever the data is modified, but notifying can be
-/// optionally disabled.
+/// This class also exposes methods to modify the underlying [List]. When the
+/// [List] is modified, listeners are notified.
 final class ListValueNotifier<T> extends ChangeNotifier
     implements ValueListenable<List<T>> {
   /// Creates a [ListValueNotifier] that wraps this value [_rawList].

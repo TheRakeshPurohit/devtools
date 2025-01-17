@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -10,36 +10,33 @@ import 'package:devtools_shared/devtools_shared.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../service/connected_app/connection_info.dart';
 import '../shared/analytics/analytics.dart' as ga;
 import '../shared/analytics/constants.dart' as gac;
-import '../shared/common_widgets.dart';
 import '../shared/config_specific/import_export/import_export.dart';
-import '../shared/connection_info.dart';
-import '../shared/feature_flags.dart';
+import '../shared/framework/routing.dart';
+import '../shared/framework/screen.dart';
 import '../shared/globals.dart';
 import '../shared/primitives/blocking_action_mixin.dart';
 import '../shared/primitives/utils.dart';
-import '../shared/routing.dart';
-import '../shared/screen.dart';
 import '../shared/title.dart';
 import '../shared/ui/vm_flag_widgets.dart';
 import 'framework_core.dart';
 
 class HomeScreen extends Screen {
   HomeScreen({this.sampleData = const []})
-      : super.fromMetaData(
-          ScreenMetaData.home,
-          titleGenerator: () => devToolsTitle.value,
-        );
+    : super.fromMetaData(
+        ScreenMetaData.home,
+        titleGenerator: () => devToolsTitle.value,
+      );
 
   static final id = ScreenMetaData.home.id;
 
   final List<DevToolsJsonFile> sampleData;
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildScreenBody(BuildContext context) {
     return HomeScreenBody(sampleData: sampleData);
   }
 }
@@ -64,7 +61,8 @@ class _HomeScreenBodyState extends State<HomeScreenBody> with AutoDisposeMixin {
 
   @override
   Widget build(BuildContext context) {
-    final connected = serviceConnection.serviceManager.hasConnection &&
+    final connected =
+        serviceConnection.serviceManager.connectedState.value.connected &&
         serviceConnection.serviceManager.connectedAppInitialized;
     return Scrollbar(
       child: ListView(
@@ -73,13 +71,6 @@ class _HomeScreenBodyState extends State<HomeScreenBody> with AutoDisposeMixin {
           if (widget.sampleData.isNotEmpty && !kReleaseMode && !connected) ...[
             SampleDataDropDownButton(sampleData: widget.sampleData),
             const SizedBox(height: defaultSpacing),
-          ],
-          // TODO(polina-c): make the MemoryScreen a static screen and remove
-          // this section from the Home page. See this PR for more details:
-          // https://github.com/flutter/devtools/pull/6010.
-          if (FeatureFlags.memoryAnalysis) ...[
-            const SizedBox(height: defaultSpacing),
-            const MemoryAnalysisInstructions(),
           ],
         ],
       ),
@@ -111,22 +102,25 @@ class ConnectionSection extends StatelessWidget {
             gaScreen: gac.home,
             minScreenWidthForTextBeforeScaling:
                 _primaryMinScreenWidthForTextBeforeScaling,
+            routerDelegate: DevToolsRouterDelegate.of(context),
+            onPressed:
+                () => Navigator.of(context, rootNavigator: true).pop('dialog'),
           ),
         ],
         child: const ConnectedAppSummary(narrowView: false),
       );
     }
-    return const ConnectDialog();
+    return const ConnectInput();
   }
 }
 
 class LandingScreenSection extends StatelessWidget {
   const LandingScreenSection({
-    Key? key,
+    super.key,
     required this.title,
     required this.child,
     this.actions = const [],
-  }) : super(key: key);
+  });
 
   final String title;
 
@@ -142,12 +136,7 @@ class LandingScreenSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(
-                title,
-                style: textTheme.titleLarge,
-              ),
-            ),
+            Expanded(child: Text(title, style: textTheme.headlineMedium)),
             ...actions,
           ],
         ),
@@ -159,39 +148,39 @@ class LandingScreenSection extends StatelessWidget {
   }
 }
 
-class ConnectDialog extends StatefulWidget {
-  const ConnectDialog({Key? key}) : super(key: key);
+class ConnectInput extends StatefulWidget {
+  const ConnectInput({super.key});
 
   @override
-  State<ConnectDialog> createState() => _ConnectDialogState();
+  State<ConnectInput> createState() => _ConnectInputState();
 }
 
-class _ConnectDialogState extends State<ConnectDialog>
-    with BlockingActionMixin {
+class _ConnectInputState extends State<ConnectInput> with BlockingActionMixin {
   late final TextEditingController connectDialogController;
 
-  SharedPreferences? _debugSharedPreferences;
-  static const _vmServiceUriKey = 'vmServiceUri';
+  /// The key for the VM Service URI we cache in storage for the purpose of
+  /// speeding up the DevTools development cycle.
+  static const _debugVmServiceUriKey = 'debug_vmServiceUri';
+
   @override
   void initState() {
     super.initState();
     connectDialogController = TextEditingController();
     assert(() {
-      _debugInitSharedPreferences();
+      _debugInitVmServiceCache();
       return true;
     }());
   }
 
-  void _debugInitSharedPreferences() async {
+  void _debugInitVmServiceCache() async {
     // We only do this in debug mode as it speeds iteration for DevTools
     // developers who tend to repeatedly restart DevTools to debug the same
     // test application.
-    _debugSharedPreferences = await SharedPreferences.getInstance();
-    if (_debugSharedPreferences != null && mounted) {
-      final uri = _debugSharedPreferences!.getString(_vmServiceUriKey);
-      if (uri != null) {
+    final uri = await storage.getValue(_debugVmServiceUriKey);
+    if (uri != null) {
+      setState(() {
         connectDialogController.text = uri;
-      }
+      });
     }
   }
 
@@ -211,32 +200,26 @@ class _ConnectDialogState extends State<ConnectDialog>
         Row(
           children: [
             SizedBox(
+              height: defaultTextFieldHeight,
               width: scaleByFontFactor(350.0),
-              child: TextField(
+              child: DevToolsClearableTextField(
+                labelText: 'VM service URL',
                 onSubmitted:
                     actionInProgress ? null : (str) => unawaited(_connect()),
                 autofocus: true,
-                decoration: const InputDecoration(
-                  isDense: true,
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    // TODO(jacobr): we need to use themed colors everywhere instead
-                    // of hard coding material colors.
-                    borderSide: BorderSide(width: 0.5, color: Colors.grey),
-                  ),
-                ),
                 controller: connectDialogController,
               ),
             ),
             const SizedBox(width: defaultSpacing),
-            ElevatedButton(
+            DevToolsButton(
               onPressed: actionInProgress ? null : () => unawaited(_connect()),
-              child: const Text('Connect'),
+              elevated: true,
+              label: 'Connect',
             ),
           ],
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          padding: const EdgeInsets.symmetric(vertical: densePadding),
           child: Text(
             '(e.g., http://127.0.0.1:12345/auth_code=...)',
             textAlign: TextAlign.start,
@@ -251,16 +234,13 @@ class _ConnectDialogState extends State<ConnectDialog>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Connect to a Running App',
-            style: textTheme.titleMedium,
-          ),
+          Text('Connect to a Running App', style: textTheme.titleMedium),
           const SizedBox(height: denseRowSpacing),
           Text(
             'Enter a URL to a running Dart or Flutter application',
             style: textTheme.bodySmall,
           ),
-          const Padding(padding: EdgeInsets.only(top: 20.0)),
+          const SizedBox(height: denseSpacing),
           connectorInput,
         ],
       ),
@@ -273,10 +253,7 @@ class _ConnectDialogState extends State<ConnectDialog>
   }
 
   Future<void> _connectHelper() async {
-    ga.select(
-      gac.home,
-      gac.HomeScreenEvents.connectToApp.name,
-    );
+    ga.select(gac.home, gac.HomeScreenEvents.connectToApp.name);
 
     final uri = connectDialogController.text;
     if (uri.isEmpty) {
@@ -285,9 +262,7 @@ class _ConnectDialogState extends State<ConnectDialog>
     }
 
     assert(() {
-      if (_debugSharedPreferences != null) {
-        _debugSharedPreferences!.setString(_vmServiceUriKey, uri);
-      }
+      storage.setValue(_debugVmServiceUriKey, uri);
       return true;
     }());
 
@@ -299,13 +274,13 @@ class _ConnectDialogState extends State<ConnectDialog>
     // notification if we are already on a different screen.
     final routerDelegate = DevToolsRouterDelegate.of(context);
     final connected = await FrameworkCore.initVmService(
-      '',
       serviceUriAsString: uri,
     );
     if (connected) {
-      final connectedUri =
-          Uri.parse(serviceConnection.serviceManager.service!.wsUri!);
-      routerDelegate.updateArgsIfChanged({'uri': '$connectedUri'});
+      final connectedUri = Uri.parse(
+        serviceConnection.serviceManager.serviceUri!,
+      );
+      await routerDelegate.updateArgsIfChanged({'uri': '$connectedUri'});
       final shortUri = connectedUri.replace(path: '');
       notificationService.push('Successfully connected to $shortUri.');
     } else if (normalizeVmServiceUri(uri) == null) {
@@ -317,49 +292,8 @@ class _ConnectDialogState extends State<ConnectDialog>
   }
 }
 
-@visibleForTesting
-class MemoryAnalysisInstructions extends StatelessWidget {
-  const MemoryAnalysisInstructions({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return LandingScreenSection(
-      title: 'Memory Analysis',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Analyze and diff the saved memory snapshots',
-            style: textTheme.titleMedium,
-          ),
-          const SizedBox(height: denseRowSpacing),
-          Text(
-            // TODO(polina-c): make package:leak_tracker a link.
-            // https://github.com/flutter/devtools/issues/5606
-            'Analyze heap snapshots that were previously saved from DevTools or package:leak_tracker.',
-            style: textTheme.bodySmall,
-          ),
-          const SizedBox(height: defaultSpacing),
-          ElevatedButton(
-            child: const Text('Open memory analysis tool'),
-            onPressed: () => _onOpen(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _onOpen(BuildContext context) {
-    DevToolsRouterDelegate.of(context).navigate(memoryAnalysisScreenId);
-  }
-}
-
 class SampleDataDropDownButton extends StatefulWidget {
-  const SampleDataDropDownButton({
-    super.key,
-    this.sampleData = const [],
-  });
+  const SampleDataDropDownButton({super.key, this.sampleData = const []});
 
   final List<DevToolsJsonFile> sampleData;
 
@@ -377,19 +311,21 @@ class _SampleDataDropDownButtonState extends State<SampleDataDropDownButton> {
       children: [
         RoundedDropDownButton<DevToolsJsonFile>(
           value: value,
-          items: [
-            for (final data in widget.sampleData) _buildMenuItem(data),
-          ],
-          onChanged: (file) => setState(() {
-            value = file;
-          }),
+          items: [for (final data in widget.sampleData) _buildMenuItem(data)],
+          onChanged:
+              (file) => setState(() {
+                value = file;
+              }),
         ),
         const SizedBox(width: defaultSpacing),
         ElevatedButton(
-          onPressed: value == null
-              ? null
-              : () => Provider.of<ImportController>(context, listen: false)
-                  .importData(value!),
+          onPressed:
+              value == null
+                  ? null
+                  : () => Provider.of<ImportController>(
+                    context,
+                    listen: false,
+                  ).importData(value!),
           child: const MaterialIconLabel(
             label: 'Load sample data',
             iconData: Icons.file_upload,

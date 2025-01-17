@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 // Code needs to match API from VmService.
 // ignore_for_file: avoid-dynamic
@@ -12,6 +12,7 @@ import 'package:vm_service/vm_service.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../sse/sse_shim.dart';
+import '../utils/utils.dart';
 
 Future<T> _connectWithSse<T extends VmService>({
   required Uri uri,
@@ -25,8 +26,7 @@ Future<T> _connectWithSse<T extends VmService>({
       ? uri.replace(scheme: 'http')
       : uri.replace(scheme: 'https');
   final client = SseClient('$uri', debugKey: 'DevToolsService');
-  final Stream<String> stream =
-      client.stream!.asBroadcastStream() as Stream<String>;
+  final stream = client.stream!.asBroadcastStream() as Stream<String>;
   final service = serviceFactory(
     inStream: stream,
     writeMessage: client.sink!.add,
@@ -41,7 +41,7 @@ Future<T> _connectWithSse<T extends VmService>({
   );
   serviceCompleter.complete(service);
 
-  unawaited(stream.drain().catchError(onError));
+  unawaited(stream.drain<void>().catchError(onError));
   return serviceCompleter.future;
 }
 
@@ -87,11 +87,7 @@ Future<T> connect<T extends VmService>({
 }) {
   final connectedCompleter = Completer<T>();
 
-  void onError(error) {
-    if (!connectedCompleter.isCompleted) {
-      connectedCompleter.completeError(error);
-    }
-  }
+  void onError(Object? error) => connectedCompleter.safeCompleteError(error!);
 
   // Connects to a VM Service but does not verify the connection was fully
   // successful.
@@ -118,11 +114,7 @@ Future<T> connect<T extends VmService>({
   }
 
   connectHelper().then(
-    (service) {
-      if (!connectedCompleter.isCompleted) {
-        connectedCompleter.complete(service);
-      }
-    },
+    (service) => connectedCompleter.safeComplete(service),
     onError: onError,
   );
   finishedCompleter.future.then((_) {

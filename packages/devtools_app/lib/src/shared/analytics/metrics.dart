@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'analytics_common.dart';
 
@@ -63,14 +63,23 @@ class ProfilerScreenMetrics extends ScreenAnalyticsMetrics {
 }
 
 class InspectorScreenMetrics extends ScreenAnalyticsMetrics {
-  InspectorScreenMetrics({
-    required this.rootSetCount,
-    required this.rowCount,
-    required this.inspectorTreeControllerId,
-  });
+  InspectorScreenMetrics.legacy({
+    this.rootSetCount,
+    this.rowCount,
+    this.inspectorTreeControllerId,
+  }) : isV2 = false;
 
-  static const int summaryTreeGaId = 0;
-  static const int detailsTreeGaId = 1;
+  InspectorScreenMetrics.v2({
+    this.rootSetCount,
+    this.rowCount,
+    this.inspectorTreeControllerId,
+  }) : isV2 = true;
+
+  static const summaryTreeGaId = 0;
+  static const detailsTreeGaId = 1;
+
+  /// Whether these metrics are for the V2 inspector.
+  final bool isV2;
 
   /// The number of times the root has been set, since the
   /// [InspectorTreeController] with id [inspectorTreeControllerId], has been
@@ -83,4 +92,14 @@ class InspectorScreenMetrics extends ScreenAnalyticsMetrics {
 
   /// The id of the [InspectorTreeController], for which this event is tracking.
   final int? inspectorTreeControllerId;
+}
+
+class DeepLinkScreenMetrics extends ScreenAnalyticsMetrics {
+  DeepLinkScreenMetrics({this.androidAppId, this.iosBundleId});
+
+  /// The Android app id of the Flutter project.
+  final String? androidAppId;
+
+  /// The iOS bundle id of the Flutter project.
+  final String? iosBundleId;
 }

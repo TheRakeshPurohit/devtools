@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -12,12 +12,12 @@ import 'package:vm_service/vm_service.dart';
 import '../../screens/profiler/cpu_profile_service.dart';
 import '../../screens/profiler/sampling_rate.dart';
 import '../analytics/constants.dart' as gac;
-import '../banner_messages.dart';
-import '../common_widgets.dart';
 import '../globals.dart';
+import '../managers/banner_messages.dart';
 import '../primitives/utils.dart';
 import '../table/table.dart';
 import '../table/table_data.dart';
+import 'common_widgets.dart';
 import 'drop_down_button.dart';
 
 /// DropdownButton that controls the value of the 'profile_period' vm flag.
@@ -36,7 +36,7 @@ class CpuSamplingRateDropdown extends StatelessWidget {
 
   /// The key to identify the dropdown button.
   @visibleForTesting
-  static const Key dropdownKey = Key('CpuSamplingRateDropdown DropdownButton');
+  static const dropdownKey = Key('CpuSamplingRateDropdown DropdownButton');
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +90,10 @@ class CpuSamplingRateDropdown extends StatelessWidget {
     return (
       item: DropdownMenuItem<String>(
         value: samplingRate.value,
-        child: Text(samplingRate.display),
+        child: DevToolsTooltip(
+          message: 'One sample every ${samplingRate.value} microseconds.',
+          child: Text(samplingRate.display),
+        ),
       ),
       gaId: samplingRate.displayShort,
     );
@@ -127,7 +130,6 @@ class ViewVmFlagsButton extends StatelessWidget {
       gaSelection: gac.HomeScreenEvents.viewVmFlags.name,
       minScreenWidthForTextBeforeScaling: minScreenWidthForTextBeforeScaling,
       onPressed: () {
-        Navigator.of(context, rootNavigator: true).pop('dialog');
         unawaited(
           showDialog(
             context: context,
@@ -173,18 +175,20 @@ class _VMFlagsDialogState extends State<VMFlagsDialog> with AutoDisposeMixin {
   }
 
   void _updateFromController() {
-    flags = (serviceConnection.vmFlagManager.flags.value?.flags ?? [])
-        .map((flag) => _DialogFlag(flag))
-        .toList();
+    flags =
+        (serviceConnection.vmFlagManager.flags.value?.flags ?? [])
+            .map((flag) => _DialogFlag(flag))
+            .toList();
     _refilter();
   }
 
   void _refilter() {
     final filter = filterController.text.trim().toLowerCase();
 
-    filteredFlags = filter.isEmpty
-        ? flags
-        : flags.where((flag) => flag.filterText.contains(filter)).toList();
+    filteredFlags =
+        filter.isEmpty
+            ? flags
+            : flags.where((flag) => flag.filterText.contains(filter)).toList();
   }
 
   @override
@@ -197,13 +201,9 @@ class _VMFlagsDialogState extends State<VMFlagsDialog> with AutoDisposeMixin {
           SizedBox(
             width: defaultSearchFieldWidth,
             height: defaultTextFieldHeight,
-            child: TextField(
+            child: DevToolsClearableTextField(
               controller: filterController,
-              decoration: const InputDecoration(
-                isDense: true,
-                border: OutlineInputBorder(),
-                labelText: 'Filter',
-              ),
+              labelText: 'Filter',
             ),
           ),
         ],
@@ -212,16 +212,10 @@ class _VMFlagsDialogState extends State<VMFlagsDialog> with AutoDisposeMixin {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 875,
-            height: 375,
-            child: _FlagTable(filteredFlags),
-          ),
+          SizedBox(width: 875, height: 375, child: _FlagTable(filteredFlags)),
         ],
       ),
-      actions: const [
-        DialogCloseButton(),
-      ],
+      actions: const [DialogCloseButton()],
     );
   }
 }
@@ -252,11 +246,7 @@ class _FlagTable extends StatelessWidget {
 }
 
 class _NameColumn extends ColumnData<_DialogFlag> {
-  _NameColumn()
-      : super(
-          'Name',
-          fixedWidthPx: scaleByFontFactor(180),
-        );
+  _NameColumn() : super('Name', fixedWidthPx: scaleByFontFactor(180));
 
   @override
   String getValue(_DialogFlag dataObject) => dataObject.name ?? '';
@@ -264,13 +254,13 @@ class _NameColumn extends ColumnData<_DialogFlag> {
 
 class _DescriptionColumn extends ColumnData<_DialogFlag> {
   _DescriptionColumn()
-      : super.wide(
-          'Description',
-          minWidthPx: scaleByFontFactor(100),
-        );
+    : super.wide('Description', minWidthPx: scaleByFontFactor(100));
 
   @override
   String getValue(_DialogFlag dataObject) => dataObject.description ?? '';
+
+  @override
+  bool get supportsSorting => false;
 
   @override
   String getTooltip(_DialogFlag dataObject) => getValue(dataObject);
@@ -278,21 +268,26 @@ class _DescriptionColumn extends ColumnData<_DialogFlag> {
 
 class _ValueColumn extends ColumnData<_DialogFlag> {
   _ValueColumn()
-      : super(
-          'Value',
-          fixedWidthPx: scaleByFontFactor(160),
-          alignment: ColumnAlignment.right,
-        );
+    : super(
+        'Value',
+        fixedWidthPx: scaleByFontFactor(100),
+        headerAlignment: TextAlign.right,
+        alignment: ColumnAlignment.right,
+      );
 
   @override
   String getValue(_DialogFlag dataObject) => dataObject.value ?? '';
+
+  @override
+  bool get supportsSorting => false;
 }
 
 class _DialogFlag {
   _DialogFlag(this.flag)
-      : filterText = '${flag.name?.toLowerCase()}\n'
-            '${flag.comment?.toLowerCase()}\n'
-            '${flag.valueAsString?.toLowerCase()}';
+    : filterText =
+          '${flag.name?.toLowerCase()}\n'
+              '${flag.comment?.toLowerCase()}\n'
+              '${flag.valueAsString?.toLowerCase()}';
 
   final Flag flag;
   final String filterText;

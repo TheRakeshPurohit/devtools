@@ -1,22 +1,25 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:js_interop';
 
 import 'package:devtools_app_shared/utils.dart';
 import 'package:devtools_app_shared/web_utils.dart';
-import 'package:web/helpers.dart' hide Storage;
+import 'package:web/web.dart' hide Storage;
 
 import '../../../service/service_manager.dart';
 import '../../globals.dart';
 import '../../primitives/storage.dart';
+import '../../server/server.dart' as server;
 import '../../server/server_api_client.dart';
 
 /// Return the url the application is launched from.
 Future<String> initializePlatform() async {
   // Clear out the unneeded HTML from index.html.
-  document.body!.querySelectorAll('.legacy-dart').forEach(
+  document.body!
+      .querySelectorAll('.legacy-dart')
+      .forEach(
         (Node element) {
           if (element.parentNode != null) {
             element.parentNode!.removeChild(element);
@@ -24,12 +27,16 @@ Future<String> initializePlatform() async {
         }.toJS,
       );
 
+  // TODO(kenz): this server connection initialized listeners that are never
+  // disposed, so this is likely leaking resources.
   // Here, we try and initialize the connection between the DevTools web app and
   // its local server. DevTools can be launched without the server however, so
   // establishing this connection is a best-effort.
+  // TODO(kenz): investigate it we can remove the DevToolsServerConnection
+  // code in general. We do not appear to be using the SSE connection.
   final connection = await DevToolsServerConnection.connect();
   if (connection != null) {
-    setGlobal(Storage, ServerConnectionStorage(connection));
+    setGlobal(Storage, server.ServerConnectionStorage());
   } else {
     setGlobal(Storage, BrowserStorage());
   }
@@ -66,7 +73,7 @@ void _sendKeyPressToParent(KeyboardEvent event) {
   // because we can't use targetOrigin in postMessage as only the scheme is fixed
   // for VS Code (vscode-webview://[some guid]).
   if (globals.containsKey(ServiceConnectionManager) &&
-      !serviceConnection.serviceManager.hasConnection) {
+      !serviceConnection.serviceManager.connectedState.value.connected) {
     return;
   }
   if (!window.navigator.userAgent.contains('Electron')) return;
@@ -86,22 +93,6 @@ void _sendKeyPressToParent(KeyboardEvent event) {
     {'command': 'keydown', 'data': data}.jsify(),
     '*'.toJS,
   );
-}
-
-class ServerConnectionStorage implements Storage {
-  ServerConnectionStorage(this.connection);
-
-  final DevToolsServerConnection connection;
-
-  @override
-  Future<String> getValue(String key) {
-    return connection.getPreferenceValue(key);
-  }
-
-  @override
-  Future<void> setValue(String key, String value) async {
-    await connection.setPreferenceValue(key, value);
-  }
 }
 
 class BrowserStorage implements Storage {

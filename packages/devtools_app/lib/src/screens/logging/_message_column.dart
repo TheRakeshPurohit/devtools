@@ -1,8 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-import 'dart:convert';
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
@@ -11,11 +9,11 @@ import '../../shared/primitives/utils.dart';
 import '../../shared/table/table.dart';
 import '../../shared/table/table_data.dart';
 import 'logging_controller.dart';
+import 'metadata.dart';
 
-@visibleForTesting
 class MessageColumn extends ColumnData<LogData>
     implements ColumnRenderer<LogData> {
-  MessageColumn() : super.wide('Message');
+  MessageColumn() : super.wide('Log');
 
   @override
   bool get supportsSorting => false;
@@ -26,8 +24,8 @@ class MessageColumn extends ColumnData<LogData>
 
   @override
   int compare(LogData a, LogData b) {
-    final String valueA = getValue(a);
-    final String valueB = getValue(b);
+    final valueA = getValue(a);
+    final valueB = getValue(b);
     // Matches frame descriptions (e.g. '#12  11.4ms ')
     final regex = RegExp(r'#(\d+)\s+\d+.\d+ms\s*');
     final valueAIsFrameLog = valueA.startsWith(regex);
@@ -52,48 +50,55 @@ class MessageColumn extends ColumnData<LogData>
     bool isRowHovered = false,
     VoidCallback? onPressed,
   }) {
-    final textStyle = Theme.of(context).fixedFontStyle;
-    if (data.kind == 'flutter.frame') {
-      const Color color = Color.fromARGB(0xff, 0x00, 0x91, 0xea);
-      final Text text = Text(
-        getDisplayValue(data),
-        overflow: TextOverflow.ellipsis,
-        style: textStyle,
-      );
+    final theme = Theme.of(context);
+    final hasSummary = !data.summary.isNullOrEmpty;
+    // This needs to be a function because the details may be computed after the
+    // initial build.
+    bool hasDetails() => !data.details.isNullOrEmpty;
 
-      double frameLength = 0.0;
-      try {
-        final int micros = jsonDecode(data.details!)['elapsed'];
-        frameLength = micros * 3.0 / 1000.0;
-      } catch (e) {
-        // ignore
-      }
-
-      return Row(
-        children: <Widget>[
-          text,
-          Flexible(
-            child: Container(
-              height: 12.0,
-              width: frameLength,
-              decoration: const BoxDecoration(color: color),
+    return ValueListenableBuilder<bool>(
+      valueListenable: data.detailsComputed,
+      builder: (context, detailsComputed, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: borderPadding),
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    if (hasSummary)
+                      ...textSpansFromAnsi(
+                        // TODO(helin24): Recompute summary length considering ansi codes.
+                        //  The current summary is generally the first 200 chars of details.
+                        data.summary!,
+                        theme.regularTextStyle,
+                      ),
+                    if (hasSummary && hasDetails())
+                      TextSpan(text: '  •  ', style: theme.subtleTextStyle),
+                    if (hasDetails())
+                      ...textSpansFromAnsi(
+                        detailsComputed ? data.details! : '<fetching>',
+                        theme.subtleTextStyle,
+                      ),
+                  ],
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
-          ),
-        ],
-      );
-    } else {
-      return RichText(
-        text: TextSpan(
-          children: processAnsiTerminalCodes(
-            // TODO(helin24): Recompute summary length considering ansi codes.
-            //  The current summary is generally the first 200 chars of details.
-            getDisplayValue(data),
-            textStyle,
-          ),
-        ),
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
-      );
-    }
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: densePadding),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return MetadataChips(data: data);
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

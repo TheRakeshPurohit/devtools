@@ -1,6 +1,6 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 // Code needs to match API from VmService.
 // ignore_for_file: avoid-dynamic
@@ -13,13 +13,13 @@ import 'package:dap/dap.dart' as dap;
 import 'package:dds_service_extensions/dap.dart';
 import 'package:dds_service_extensions/dds_service_extensions.dart';
 import 'package:devtools_app_shared/service.dart';
+import 'package:devtools_shared/devtools_shared.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:vm_service/vm_service.dart';
 
 import '../screens/vm_developer/vm_service_private_extensions.dart';
 import '../shared/feature_flags.dart';
-import '../shared/globals.dart';
 import '../shared/primitives/utils.dart';
 import 'json_to_service_cache.dart';
 
@@ -78,17 +78,18 @@ class VmServiceWrapper extends VmService {
 
   final bool _trackFutures;
 
-  final Map<String, Future<Success>> _activeStreams = {};
+  final _activeStreams = <String, Future<Success>>{};
 
-  final Set<TrackedFuture<Object>> activeFutures = {};
+  final activeFutures = <TrackedFuture<Object>>{};
 
   Future<void> get allFuturesCompleted => _allFuturesCompleter.future;
 
-  Completer<bool> _allFuturesCompleter = Completer<bool>()
-    // Mark the future as completed by default so if we don't track any
-    // futures but someone tries to wait on [allFuturesCompleted] they don't
-    // hang. The first tracked future will replace this with a new completer.
-    ..complete(true);
+  Completer<bool> _allFuturesCompleter =
+      Completer<bool>()
+        // Mark the future as completed by default so if we don't track any
+        // futures but someone tries to wait on [allFuturesCompleted] they don't
+        // hang. The first tracked future will replace this with a new completer.
+        ..complete(true);
 
   // A local cache of "fake" service objects. Used to convert JSON objects to
   // VM service response formats to be used with APIs that require them.
@@ -141,7 +142,9 @@ class VmServiceWrapper extends VmService {
         // running with VM developer mode enabled. This data isn't accessible
         // in non-VM developer mode, so not requesting the code profile will
         // save on space and network usage.
-        '_code': preferences.vmDeveloperModeEnabled.value,
+        // TODO(bkonyi): re-enable when package:vm_service 15.0.0 is rolled
+        // into Flutter. See https://github.com/flutter/devtools/issues/8567.
+        // '_code': preferences.vmDeveloperModeEnabled.value,
       },
     ).then((e) => e as CpuSamples);
   }
@@ -152,6 +155,7 @@ class VmServiceWrapper extends VmService {
     String objectId, {
     int? offset,
     int? count,
+    String? idZoneId,
   }) {
     final cachedObj = fakeServiceCache.getObject(
       objectId: objectId,
@@ -161,16 +165,24 @@ class VmServiceWrapper extends VmService {
     if (cachedObj != null) {
       return Future.value(cachedObj);
     }
-    return super.getObject(
-      isolateId,
-      objectId,
-      offset: offset,
-      count: count,
-    );
+    return super.getObject(isolateId, objectId, offset: offset, count: count);
   }
 
-  Future<HeapSnapshotGraph> getHeapSnapshotGraph(IsolateRef isolateRef) async {
-    return await HeapSnapshotGraph.getSnapshot(this, isolateRef);
+  Future<HeapSnapshotGraph> getHeapSnapshotGraph(
+    IsolateRef isolateRef, {
+    bool calculateReferrers = true,
+    bool decodeObjectData = true,
+    bool decodeExternalProperties = true,
+    bool decodeIdentityHashCodes = true,
+  }) async {
+    return await HeapSnapshotGraph.getSnapshot(
+      this,
+      isolateRef,
+      calculateReferrers: calculateReferrers,
+      decodeObjectData: decodeObjectData,
+      decodeExternalProperties: decodeExternalProperties,
+      decodeIdentityHashCodes: decodeIdentityHashCodes,
+    );
   }
 
   @override
@@ -191,9 +203,19 @@ class VmServiceWrapper extends VmService {
     }
   }
 
-  // Mark: Overrides for [DdsExtension]. It would help with logical grouping to
-  // make these extension methods, but that makes testing more difficult due to
-  // mocking limitations for extension methods.
+  // Mark: Overrides for [DdsExtension]. We wrap these methods so that we can
+  // override them in tests.
+
+  Future<PerfettoTimeline> getPerfettoVMTimelineWithCpuSamplesWrapper({
+    int? timeOriginMicros,
+    int? timeExtentMicros,
+  }) {
+    return getPerfettoVMTimelineWithCpuSamples(
+      timeOriginMicros: timeOriginMicros,
+      timeExtentMicros: timeExtentMicros,
+    );
+  }
+
   Stream<Event> get onExtensionEventWithHistorySafe {
     return _maybeReturnStreamWithHistory(
       onExtensionEventWithHistory,
@@ -264,7 +286,7 @@ class VmServiceWrapper extends VmService {
 
   Future<HttpProfile> getHttpProfileWrapper(
     String isolateId, {
-    int? updatedSince,
+    DateTime? updatedSince,
   }) {
     return getHttpProfile(isolateId, updatedSince: updatedSince);
   }
@@ -316,10 +338,7 @@ class VmServiceWrapper extends VmService {
   ///
   /// All logs from this run will have matching unique ids, so that they can
   /// be associated together in the logs.
-  Future<T> _maybeLogWrappedFuture<T>(
-    String name,
-    Future<T> future,
-  ) async {
+  Future<T> _maybeLogWrappedFuture<T>(String name, Future<T> future) async {
     // If the logger is not accepting FINE logs, then we won't be logging any
     // messages. So just return the [future] as-is.
     if (!_log.isLoggable(Level.FINE)) return future;
@@ -331,10 +350,7 @@ class VmServiceWrapper extends VmService {
       _log.fine('[$logId]-wrapFuture($name,...): Succeeded');
       return result;
     } catch (error) {
-      _log.severe(
-        '[$logId]-wrapFuture($name,...): Failed',
-        error,
-      );
+      _log.severe('[$logId]-wrapFuture($name,...): Failed', error);
       rethrow;
     }
   }
@@ -357,8 +373,8 @@ class VmServiceWrapper extends VmService {
 
     void futureComplete() {
       activeFutures.remove(trackedFuture);
-      if (activeFutures.isEmpty && !_allFuturesCompleter.isCompleted) {
-        _allFuturesCompleter.complete(true);
+      if (activeFutures.isEmpty) {
+        _allFuturesCompleter.safeComplete(true);
       }
     }
 
@@ -393,18 +409,14 @@ class VmServiceWrapper extends VmService {
   }
 
   /// Forces the VM to perform a full garbage collection.
-  Future<Success?> collectAllGarbage() => _privateRpcInvoke(
-        'collectAllGarbage',
-        parser: Success.parse,
-      );
+  Future<Success?> collectAllGarbage() =>
+      _privateRpcInvoke('collectAllGarbage', parser: Success.parse);
 
   Future<InstanceRef?> getReachableSize(String isolateId, String targetId) =>
       _privateRpcInvoke(
         'getReachableSize',
         isolateId: isolateId,
-        args: {
-          'targetId': targetId,
-        },
+        args: {'targetId': targetId},
         parser: InstanceRef.parse,
       );
 
@@ -412,17 +424,15 @@ class VmServiceWrapper extends VmService {
       _privateRpcInvoke(
         'getRetainedSize',
         isolateId: isolateId,
-        args: {
-          'targetId': targetId,
-        },
+        args: {'targetId': targetId},
         parser: InstanceRef.parse,
       );
 
   Future<ObjectStore?> getObjectStore(String isolateId) => _privateRpcInvoke(
-        'getObjectStore',
-        isolateId: isolateId,
-        parser: ObjectStore.parse,
-      );
+    'getObjectStore',
+    isolateId: isolateId,
+    parser: ObjectStore.parse,
+  );
 
   Future<dap.VariablesResponseBody?> dapVariablesRequest(
     dap.VariablesArguments args,
@@ -430,9 +440,7 @@ class VmServiceWrapper extends VmService {
     final response = await _sendDapRequest('variables', args: args);
     if (response == null) return null;
 
-    return dap.VariablesResponseBody.fromJson(
-      response as Map<String, Object?>,
-    );
+    return dap.VariablesResponseBody.fromJson(response as Map<String, Object?>);
   }
 
   Future<dap.ScopesResponseBody?> dapScopesRequest(
@@ -441,9 +449,7 @@ class VmServiceWrapper extends VmService {
     final response = await _sendDapRequest('scopes', args: args);
     if (response == null) return null;
 
-    return dap.ScopesResponseBody.fromJson(
-      response as Map<String, Object?>,
-    );
+    return dap.ScopesResponseBody.fromJson(response as Map<String, Object?>);
   }
 
   Future<dap.StackTraceResponseBody?> dapStackTraceRequest(
@@ -471,11 +477,7 @@ class VmServiceWrapper extends VmService {
 
     final response = await sendDapRequest(
       jsonEncode(
-        dap.Request(
-          command: command,
-          seq: _dapSeq++,
-          arguments: args,
-        ),
+        dap.Request(command: command, seq: _dapSeq++, arguments: args),
       ),
     );
 

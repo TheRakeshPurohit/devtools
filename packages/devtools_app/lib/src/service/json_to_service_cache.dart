@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:flutter/foundation.dart';
 import 'package:vm_service/vm_service.dart';
@@ -20,10 +20,7 @@ class JsonToServiceCache {
   static final _kTrue = Instance(
     kind: InstanceKind.kBool,
     identityHashCode: -1,
-    classRef: ClassRef(
-      name: 'bool',
-      id: 'json-cache-bool',
-    ),
+    classRef: ClassRef(name: 'bool', id: 'json-cache-bool'),
     valueAsString: 'true',
     id: 'json-cache-true',
   );
@@ -31,10 +28,7 @@ class JsonToServiceCache {
   static final _kFalse = Instance(
     kind: InstanceKind.kBool,
     identityHashCode: -1,
-    classRef: ClassRef(
-      name: 'bool',
-      id: 'json-cache-bool',
-    ),
+    classRef: ClassRef(name: 'bool', id: 'json-cache-bool'),
     valueAsString: 'false',
     id: 'json-cache-false',
   );
@@ -42,10 +36,7 @@ class JsonToServiceCache {
   static final _kNull = Instance(
     kind: InstanceKind.kNull,
     identityHashCode: -1,
-    classRef: ClassRef(
-      name: 'Null',
-      id: 'json-cache-null-cls',
-    ),
+    classRef: ClassRef(name: 'Null', id: 'json-cache-null-cls'),
     id: 'json-cache-null',
   );
 
@@ -54,10 +45,7 @@ class JsonToServiceCache {
     id: 'json-cache-list-class',
   );
 
-  static final _kMapClass = ClassRef(
-    name: 'Map',
-    id: 'json-cache-map-class',
-  );
+  static final _kMapClass = ClassRef(name: 'Map', id: 'json-cache-map-class');
 
   /// The current number of non-constant elements in the cache.
   @visibleForTesting
@@ -71,11 +59,7 @@ class JsonToServiceCache {
   /// should be returned. If `offset` is provided, `count` must also be provided.
   /// The result will be an `Instance` containing `count` objects, starting from
   /// `offset`.
-  Instance? getObject({
-    required String objectId,
-    int? offset,
-    int? count,
-  }) {
+  Instance? getObject({required String objectId, int? offset, int? count}) {
     final obj = _cache[objectId];
     if (obj == null) return null;
     if (offset != null && count != null) {
@@ -118,6 +102,49 @@ class JsonToServiceCache {
       return _insertMap(json.cast<String, Object?>());
     }
     return _insertPrimitive(json);
+  }
+
+  /// Recursively convert an [Instance] back to JSON that could have created it.
+  Object? instanceToJson(Instance instance) {
+    switch (instance.kind) {
+      case InstanceKind.kMap:
+        final map = <String, Object?>{};
+        for (final association in instance.associations ?? <MapAssociation>[]) {
+          map[(association.key as Instance).valueAsString!] = instanceToJson(
+            association.value,
+          );
+        }
+        return map;
+      case InstanceKind.kList:
+        return [...instance.elements?.map((e) => instanceToJson(e)) ?? []];
+      case InstanceKind.kString:
+        return instance.valueAsString;
+      case InstanceKind.kInt:
+        final value = instance.valueAsString;
+        if (value == null) {
+          return null;
+        } else {
+          return int.parse(value);
+        }
+      case InstanceKind.kBool:
+        final value = instance.valueAsString;
+        if (value == null) {
+          return null;
+        } else {
+          return bool.parse(value);
+        }
+      case InstanceKind.kDouble:
+        final value = instance.valueAsString;
+        if (value == null) {
+          return null;
+        } else {
+          return double.parse(value);
+        }
+      case InstanceKind.kNull:
+        return null;
+      default:
+        throw 'Unhandled instance type: ${instance.kind}';
+    }
   }
 
   /// Recursively removes [Instance] entries in the cache starting from a root
@@ -167,9 +194,7 @@ class JsonToServiceCache {
       classRef: _kListClass,
       id: _nextId(),
     );
-    list.elements = <Instance>[
-      for (final e in json) insertJsonObject(e),
-    ];
+    list.elements = <Instance>[for (final e in json) insertJsonObject(e)];
     list.length = json.length;
     _cache[list.id!] = list;
     return list;
@@ -190,10 +215,7 @@ class JsonToServiceCache {
       instance = Instance(
         kind: InstanceKind.kString,
         identityHashCode: -1,
-        classRef: ClassRef(
-          name: 'String',
-          id: 'json-cache-string',
-        ),
+        classRef: ClassRef(name: 'String', id: 'json-cache-string'),
         id: _nextId(),
         valueAsString: json,
       );
@@ -201,10 +223,7 @@ class JsonToServiceCache {
       instance = Instance(
         kind: InstanceKind.kInt,
         identityHashCode: json,
-        classRef: ClassRef(
-          name: 'int',
-          id: 'json-cache-int',
-        ),
+        classRef: ClassRef(name: 'int', id: 'json-cache-int'),
         valueAsString: json.toString(),
         id: _nextId(),
       );
@@ -212,10 +231,7 @@ class JsonToServiceCache {
       instance = Instance(
         kind: InstanceKind.kDouble,
         identityHashCode: -1,
-        classRef: ClassRef(
-          name: 'double',
-          id: 'json-cache-double',
-        ),
+        classRef: ClassRef(name: 'double', id: 'json-cache-double'),
         valueAsString: json.toString(),
         id: _nextId(),
       );

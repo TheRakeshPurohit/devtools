@@ -1,10 +1,10 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:vm_service/vm_service.dart';
 
-/// Entries for each class statistics
+/// Entries for each class's statistics.
 class ClassHeapDetailStats {
   ClassHeapDetailStats(
     this.classRef, {
@@ -19,9 +19,8 @@ class ClassHeapDetailStats {
         instancesDelta = deltaInstances,
         isStacktraced = traceAllocations;
 
-  factory ClassHeapDetailStats.fromJson(Map<String, dynamic> json) {
-    final classId = json['class']['id'];
-    final className = json['class']['name'];
+  factory ClassHeapDetailStats.fromJson(Map<String, Object?> json) {
+    final {'id': classId, 'name': className} = json['class'] as Map;
 
     return ClassHeapDetailStats(
       ClassRef(id: classId, name: className),
@@ -34,7 +33,10 @@ class ClassHeapDetailStats {
   }
 
   Map<String, dynamic> toJson() => {
-        'class': {'id': classRef.id, 'name': classRef.name},
+        'class': {
+          'id': classRef.id,
+          'name': classRef.name,
+        },
         'bytesCurrent': bytesCurrent,
         'bytesDelta': bytesDelta,
         'instancesCurrent': instancesCurrent,
@@ -42,7 +44,7 @@ class ClassHeapDetailStats {
         'isStackedTraced': isStacktraced,
       };
 
-  /// Version of ClassHeapDetailsStats payload.
+  /// Version of [ClassHeapDetailStats] payload.
   static const version = 1;
 
   final ClassRef classRef;

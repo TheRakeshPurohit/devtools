@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:vm_service/vm_service.dart';
 
@@ -26,7 +26,7 @@ class InboundReferencesTreeNode extends TreeNode<InboundReferencesTreeNode> {
   @override
   bool get isExpandable => ref.source != null;
 
-  late final String description = _inboundRefDescription(ref, null);
+  late final description = _inboundRefDescription(ref, null);
 
   /// Wrapper to get the name of an [ObjRef] depending on its type.
   String? _objectName(ObjRef? objectRef) {
@@ -37,8 +37,7 @@ class InboundReferencesTreeNode extends TreeNode<InboundReferencesTreeNode> {
     return switch (objectRef) {
       ClassRef(:final name) ||
       FuncRef(:final name) ||
-      FieldRef(:final name) =>
-        name,
+      FieldRef(:final name) => name,
       LibraryRef(:final name, :final uri) => name.isNullOrEmpty ? uri : name,
       ScriptRef(:final uri) => fileNameFromUri(uri),
       InstanceRef(:final name, :final classRef) =>
@@ -65,18 +64,13 @@ class InboundReferencesTreeNode extends TreeNode<InboundReferencesTreeNode> {
   String _inboundRefDescription(InboundReference inboundRef, int? offset) {
     final parentListIndex = inboundRef.parentListIndex;
     if (parentListIndex != null) {
-      return 'Referenced by ${_parentListElementDescription(
-        parentListIndex,
-        inboundRef.source,
-      )}';
+      return 'Referenced by ${_parentListElementDescription(parentListIndex, inboundRef.source)}';
     }
 
     final description = StringBuffer('Referenced by ');
 
     if (offset != null) {
-      description.write(
-        'offset $offset of ',
-      );
+      description.write('offset $offset of ');
     }
 
     if (inboundRef.parentField is int) {
@@ -86,14 +80,10 @@ class InboundReferencesTreeNode extends TreeNode<InboundReferencesTreeNode> {
       assert((inboundRef.source as InstanceRef).kind == InstanceKind.kRecord);
       description.write('${inboundRef.parentField} of ');
     } else if (inboundRef.parentField is FieldRef) {
-      description.write(
-        '${_objectName(inboundRef.parentField)} of ',
-      );
+      description.write('${_objectName(inboundRef.parentField)} of ');
     }
 
-    description.write(
-      _objectDescription(inboundRef.source) ?? '<object>',
-    );
+    description.write(_objectDescription(inboundRef.source) ?? '<object>');
 
     return description.toString();
   }

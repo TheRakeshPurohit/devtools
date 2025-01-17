@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -20,10 +20,10 @@ import '../../shared/diagnostics/dart_object_node.dart';
 import '../../shared/diagnostics/primitives/source_location.dart';
 import '../../shared/diagnostics/tree_builder.dart';
 import '../../shared/feature_flags.dart';
+import '../../shared/framework/routing.dart';
 import '../../shared/globals.dart';
 import '../../shared/primitives/message_bus.dart';
 import '../../shared/primitives/utils.dart';
-import '../../shared/routing.dart';
 import 'codeview_controller.dart';
 import 'debugger_model.dart';
 
@@ -82,7 +82,7 @@ class DebuggerController extends DisposableController
 
   /// Method to call after the vm service shuts down.
   void _onServiceShutdown() {
-    _clearCaches();
+    _clearCaches(isServiceShutdown: true);
 
     _hasTruncatedFrames.value = false;
     unawaited(_getStackOperation?.cancel());
@@ -148,7 +148,7 @@ class DebuggerController extends DisposableController
       ValueNotifier<List<StackFrameAndSourcePosition>>([]);
 
   ValueListenable<List<StackFrameAndSourcePosition>>
-      get stackFramesWithLocation => _stackFramesWithLocation;
+  get stackFramesWithLocation => _stackFramesWithLocation;
 
   final _selectedStackFrame = ValueNotifier<StackFrameAndSourcePosition?>(null);
 
@@ -160,8 +160,9 @@ class DebuggerController extends DisposableController
   ValueListenable<BreakpointAndSourcePosition?> get selectedBreakpoint =>
       _selectedBreakpoint;
 
-  final _exceptionPauseMode =
-      ValueNotifier<String>(ExceptionPauseMode.kUnhandled);
+  final _exceptionPauseMode = ValueNotifier<String>(
+    ExceptionPauseMode.kUnhandled,
+  );
 
   ValueListenable<String?> get exceptionPauseMode => _exceptionPauseMode;
 
@@ -177,6 +178,8 @@ class DebuggerController extends DisposableController
     // TODO(polina-c and jacob314): move this logic to appState
     // and modify to detect if app is paused from the isolate
     // https://github.com/flutter/devtools/pull/4993#discussion_r1060845351
+
+    if (serviceConnection.serviceManager.service == null) return;
 
     await _pause(false);
 
@@ -233,9 +236,10 @@ class DebuggerController extends DisposableController
     return _service
         .resume(
           _isolateRefId,
-          step: useAsyncStepping
-              ? StepOption.kOverAsyncSuspension
-              : StepOption.kOver,
+          step:
+              useAsyncStepping
+                  ? StepOption.kOverAsyncSuspension
+                  : StepOption.kOver,
         )
         .whenComplete(() => _debugTimingLog.log('stepOver() completed'));
   }
@@ -253,10 +257,7 @@ class DebuggerController extends DisposableController
   }
 
   Future<void> setIsolatePauseMode(String mode) async {
-    await _service.setIsolatePauseMode(
-      _isolateRefId,
-      exceptionPauseMode: mode,
-    );
+    await _service.setIsolatePauseMode(_isolateRefId, exceptionPauseMode: mode);
     _exceptionPauseMode.value = mode;
   }
 
@@ -324,12 +325,15 @@ class DebuggerController extends DisposableController
     if (theIsolateRef == null) return;
     // Refresh the list of scripts.
     final previousScriptRefs = scriptManager.sortedScripts.value;
-    final currentScriptRefs =
-        await scriptManager.retrieveAndSortScripts(theIsolateRef);
-    final removedScripts =
-        Set.of(previousScriptRefs).difference(Set.of(currentScriptRefs));
-    final addedScripts =
-        Set.of(currentScriptRefs).difference(Set.of(previousScriptRefs));
+    final currentScriptRefs = await scriptManager.retrieveAndSortScripts(
+      theIsolateRef,
+    );
+    final removedScripts = Set.of(
+      previousScriptRefs,
+    ).difference(Set.of(currentScriptRefs));
+    final addedScripts = Set.of(
+      currentScriptRefs,
+    ).difference(Set.of(previousScriptRefs));
 
     // TODO(devoncarew): Show a message in the logging view.
 
@@ -345,8 +349,9 @@ class DebuggerController extends DisposableController
     // Redirect the current editor screen if necessary.
     if (removedScripts.contains(codeViewController.currentScriptRef.value)) {
       final uri = codeViewController.currentScriptRef.value!.uri;
-      final newScriptRef =
-          addedScripts.firstWhereOrNull((script) => script.uri == uri);
+      final newScriptRef = addedScripts.firstWhereOrNull(
+        (script) => script.uri == uri,
+      );
 
       if (newScriptRef != null) {
         // Display the script location.
@@ -397,29 +402,23 @@ class DebuggerController extends DisposableController
         _log.warning(
           'Pause event has no frame. This likely indicates a DWDS bug.',
         );
-        await _populateFrameInfo(
-          [
-            await _createStackFrameWithLocation(
-              Frame(
-                code: CodeRef(
-                  name: 'No Dart frames found, likely paused in JS.',
-                  kind: CodeKind.kTag,
-                  id: DateTime.now().microsecondsSinceEpoch.toString(),
-                ),
+        await _populateFrameInfo([
+          await _createStackFrameWithLocation(
+            Frame(
+              code: CodeRef(
+                name: 'No Dart frames found, likely paused in JS.',
+                kind: CodeKind.kTag,
+                id: DateTime.now().microsecondsSinceEpoch.toString(),
               ),
             ),
-          ],
-          truncated: true,
-        );
-        ga.select(gac.debugger, gac.pausedWithNoFrames);
+          ),
+        ], truncated: true);
+        ga.select(gac.debugger, gac.DebuggerEvents.pausedWithNoFrames.name);
         return;
       }
-      await _populateFrameInfo(
-        [
-          await _createStackFrameWithLocation(topFrame),
-        ],
-        truncated: true,
-      );
+      await _populateFrameInfo([
+        await _createStackFrameWithLocation(topFrame),
+      ], truncated: true);
       unawaited(_getFullStack());
       return;
     }
@@ -429,15 +428,10 @@ class DebuggerController extends DisposableController
     const initialFrameRequestCount = 12;
 
     _getStackOperation = CancelableOperation.fromFuture(
-      _getStackInfo(
-        limit: initialFrameRequestCount,
-      ),
+      _getStackInfo(limit: initialFrameRequestCount),
     );
     final stackInfo = await _getStackOperation!.value;
-    await _populateFrameInfo(
-      stackInfo.frames,
-      truncated: stackInfo.truncated,
-    );
+    await _populateFrameInfo(stackInfo.frames, truncated: stackInfo.truncated);
 
     // In the background, populate the rest of the frames.
     if (stackInfo.truncated) {
@@ -448,8 +442,9 @@ class DebuggerController extends DisposableController
   Future<_StackInfo> _getStackInfo({int? limit}) async {
     _debugTimingLog.log('getStack() with limit: $limit');
     final stack = await _service.getStack(_isolateRefId, limit: limit);
-    _debugTimingLog
-        .log('getStack() completed (frames: ${stack.frames!.length})');
+    _debugTimingLog.log(
+      'getStack() completed (frames: ${stack.frames!.length})',
+    );
 
     final frames = _framesForCallStack(
       stack.frames ?? [],
@@ -484,16 +479,17 @@ class DebuggerController extends DisposableController
     await _populateFrameInfo(stackInfo.frames, truncated: stackInfo.truncated);
   }
 
-  void _clearCaches() {
+  void _clearCaches({bool isServiceShutdown = false}) {
     _lastEvent = null;
-    breakpointManager.clearCache();
+    breakpointManager.clearCache(isServiceShutdown: isServiceShutdown);
   }
 
   Future<void> _populateScripts(Isolate isolate) async {
     final theIsolateRef = _isolate.value;
     if (theIsolateRef == null) return;
-    final scriptRefs =
-        await scriptManager.retrieveAndSortScripts(theIsolateRef);
+    final scriptRefs = await scriptManager.retrieveAndSortScripts(
+      theIsolateRef,
+    );
 
     // Update the selected script.
     final mainScriptRef = scriptRefs.firstWhereOrNull((ref) {
@@ -516,7 +512,7 @@ class DebuggerController extends DisposableController
     }
 
     final script = await scriptManager.getScript(scriptInfo);
-    final position = SourcePosition.calculatePosition(script, tokenPos);
+    final position = SourcePosition.calculatePosition(script!, tokenPos);
     return StackFrameAndSourcePosition(frame, position: position);
   }
 
@@ -564,14 +560,10 @@ class DebuggerController extends DisposableController
       return [];
     }
 
-    final variables = frame.vars!
-        .map(
-          (v) => DartObjectNode.create(
-            v,
-            _isolate.value,
-          ),
-        )
-        .toList();
+    final variables =
+        frame.vars!
+            .map((v) => DartObjectNode.create(v, _isolate.value))
+            .toList();
     // TODO(jacobr): would be nice to be able to remove this call to unawaited
     // but it would require a significant refactor.
     variables
@@ -604,8 +596,13 @@ class DebuggerController extends DisposableController
   }
 
   Future<dap.StackFrame?> _fetchDapFrame(Frame vmFrame) async {
-    final isolateNumber = serviceConnection
-        .serviceManager.isolateManager.selectedIsolate.value?.number;
+    final isolateNumber =
+        serviceConnection
+            .serviceManager
+            .isolateManager
+            .selectedIsolate
+            .value
+            ?.number;
     final frameIndex = vmFrame.index;
     if (isolateNumber == null || frameIndex == null) return null;
 
@@ -623,18 +620,14 @@ class DebuggerController extends DisposableController
 
   Future<List<dap.Scope>> _fetchDapScopes(int frameId) async {
     final scopesResponse = await _service.dapScopesRequest(
-      dap.ScopesArguments(
-        frameId: frameId,
-      ),
+      dap.ScopesArguments(frameId: frameId),
     );
     return scopesResponse?.scopes ?? [];
   }
 
   Future<List<dap.Variable>> _fetchDapVariables(int variablesReference) async {
     final variablesResponse = await _service.dapVariablesRequest(
-      dap.VariablesArguments(
-        variablesReference: variablesReference,
-      ),
+      dap.VariablesArguments(variablesReference: variablesReference),
     );
     return variablesResponse?.variables ?? [];
   }
@@ -663,10 +656,7 @@ class DebuggerController extends DisposableController
       );
 
       newFrame.vars = [
-        BoundVariable(
-          name: '<exception>',
-          value: reportedException,
-        ),
+        BoundVariable(name: '<exception>', value: reportedException),
         ...frame.vars ?? [],
       ];
 

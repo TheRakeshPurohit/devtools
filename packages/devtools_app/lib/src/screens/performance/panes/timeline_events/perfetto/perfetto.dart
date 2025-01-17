@@ -1,26 +1,23 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:flutter/material.dart';
 
 import '../../../../../shared/analytics/constants.dart' as gac;
-import '../../../../../shared/common_widgets.dart';
+import '../../../../../shared/ui/common_widgets.dart';
 import '_perfetto_desktop.dart'
     if (dart.library.js_interop) '_perfetto_web.dart';
 import 'perfetto_controller.dart';
 
 class EmbeddedPerfetto extends StatelessWidget {
-  const EmbeddedPerfetto({Key? key, required this.perfettoController})
-      : super(key: key);
+  const EmbeddedPerfetto({super.key, required this.perfettoController});
 
   final PerfettoController perfettoController;
 
   @override
   Widget build(BuildContext context) {
-    return Perfetto(
-      perfettoController: perfettoController,
-    );
+    return Perfetto(perfettoController: perfettoController);
   }
 }
 

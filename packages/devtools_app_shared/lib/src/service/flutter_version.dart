@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_shared/devtools_shared.dart';
 
@@ -43,6 +43,18 @@ final class FlutterVersion extends SemanticVersion {
     );
   }
 
+  factory FlutterVersion.unknown() {
+    return FlutterVersion._(
+      version: null,
+      channel: null,
+      repositoryUrl: null,
+      frameworkRevision: null,
+      frameworkCommitDate: null,
+      engineRevision: null,
+      dartSdkVersion: null,
+    );
+  }
+
   final String? version;
 
   final String? channel;
@@ -56,6 +68,15 @@ final class FlutterVersion extends SemanticVersion {
   final String? engineRevision;
 
   final SemanticVersion? dartSdkVersion;
+
+  bool get unknown =>
+      version == null &&
+      channel == null &&
+      repositoryUrl == null &&
+      frameworkRevision == null &&
+      frameworkCommitDate == null &&
+      engineRevision == null &&
+      dartSdkVersion == null;
 
   @override
   bool operator ==(Object other) {

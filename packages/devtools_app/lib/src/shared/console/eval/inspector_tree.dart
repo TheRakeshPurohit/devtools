@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 /// Inspector specific tree rendering support.
 ///
@@ -14,35 +14,32 @@ import 'package:flutter/foundation.dart';
 
 import '../../diagnostics/diagnostics_node.dart';
 import '../../ui/search.dart';
-import '../../utils.dart';
 
 /// Split text into two groups, word characters at the start of a string and all
 /// other characters.
-final RegExp treeNodePrimaryDescriptionPattern = RegExp(r'^([\w ]+)(.*)$');
+final treeNodePrimaryDescriptionPattern = RegExp(r'^([\w ]+)(.*)$');
 // TODO(jacobr): temporary workaround for missing structure from assertion thrown building
 // widget errors.
-final RegExp assertionThrownBuildingError = RegExp(
+final assertionThrownBuildingError = RegExp(
   r'^(The following assertion was thrown building [a-zA-Z]+)(\(.*\))(:)$',
 );
 
 typedef TreeEventCallback = void Function(InspectorTreeNode node);
 
-const double iconPadding = 4.0;
-const double chartLineStrokeWidth = 1.0;
-double get columnWidth => scaleByFontFactor(isDense() ? 12.0 : 16.0);
-double get rowHeight => scaleByFontFactor(isDense() ? 20.0 : 24.0);
+const iconPadding = 4.0;
+const chartLineStrokeWidth = 1.0;
+double get inspectorColumnWidth => scaleByFontFactor(12.0);
+double get inspectorRowHeight => scaleByFontFactor(16.0);
 
 /// This class could be refactored out to be a reasonable generic collapsible
 /// tree ui node class but we choose to instead make it widget inspector
 /// specific as that is the only case we care about.
 // TODO(kenz): extend TreeNode class to share tree logic.
 class InspectorTreeNode {
-  InspectorTreeNode({
-    InspectorTreeNode? parent,
-    bool expandChildren = true,
-  })  : _children = <InspectorTreeNode>[],
-        _parent = parent,
-        _isExpanded = expandChildren;
+  InspectorTreeNode({InspectorTreeNode? parent, bool expandChildren = true})
+    : _children = <InspectorTreeNode>[],
+      _parent = parent,
+      _isExpanded = expandChildren;
 
   bool get showLinesToChildren {
     return _children.length > 1 && !_children.last.isProperty;
@@ -72,7 +69,7 @@ class InspectorTreeNode {
   void updateShouldShow(bool value) {
     if (value != _shouldShow) {
       _shouldShow = value;
-      for (var child in children) {
+      for (final child in children) {
         child.updateShouldShow(value);
       }
     }
@@ -114,7 +111,7 @@ class InspectorTreeNode {
       _isExpanded = value;
       isDirty = true;
       if (_shouldShow ?? false) {
-        for (var child in children) {
+        for (final child in children) {
           child.updateShouldShow(value);
         }
       }
@@ -147,7 +144,7 @@ class InspectorTreeNode {
       return childrenCountLocal;
     }
     int count = 0;
-    for (InspectorTreeNode child in _children) {
+    for (final child in _children) {
       count += child.subtreeSize;
     }
     return _childrenCount = count;
@@ -165,11 +162,11 @@ class InspectorTreeNode {
   int getRowIndex(InspectorTreeNode node) {
     int index = 0;
     while (true) {
-      final InspectorTreeNode? parent = node.parent;
+      final parent = node.parent;
       if (parent == null) {
         break;
       }
-      for (InspectorTreeNode sibling in parent._children) {
+      for (final sibling in parent._children) {
         if (sibling == node) {
           break;
         }
@@ -190,7 +187,7 @@ class InspectorTreeNode {
       return null;
     }
 
-    final List<int> ticks = <int>[];
+    final ticks = <int>[];
     InspectorTreeNode node = this;
     int current = 0;
     int depth = 0;
@@ -198,7 +195,8 @@ class InspectorTreeNode {
     // Iterate till getting the result to return.
     while (true) {
       final style = node.diagnostic?.style;
-      final bool indented = style != DiagnosticsTreeStyle.flat &&
+      final indented =
+          style != DiagnosticsTreeStyle.flat &&
           style != DiagnosticsTreeStyle.error;
       if (current == index) {
         return InspectorTreeRow(
@@ -206,14 +204,15 @@ class InspectorTreeNode {
           index: index,
           ticks: ticks,
           depth: depth,
-          lineToParent: !node.isProperty &&
+          lineToParent:
+              !node.isProperty &&
               index != 0 &&
               node.parent!.showLinesToChildren,
         );
       }
       assert(index > current);
       current++;
-      final List<InspectorTreeNode> children = node._children;
+      final children = node._children;
       int i;
       for (i = 0; i < children.length; ++i) {
         final child = children[i];
@@ -279,10 +278,11 @@ class InspectorTreeRow with SearchableDataMixin {
 }
 
 /// Callback issued every time a node is added to the tree.
-typedef NodeAddedCallback = void Function(
-  InspectorTreeNode node,
-  RemoteDiagnosticsNode diagnosticsNode,
-);
+typedef NodeAddedCallback =
+    void Function(
+      InspectorTreeNode node,
+      RemoteDiagnosticsNode diagnosticsNode,
+    );
 
 class InspectorTreeConfig {
   InspectorTreeConfig({

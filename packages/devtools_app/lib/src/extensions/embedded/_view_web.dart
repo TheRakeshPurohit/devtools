@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:js_interop';
@@ -9,12 +9,15 @@ import 'package:devtools_app_shared/ui.dart';
 import 'package:devtools_app_shared/utils.dart';
 import 'package:devtools_extensions/api.dart';
 import 'package:devtools_extensions/utils.dart';
+import 'package:devtools_shared/devtools_shared.dart';
 import 'package:flutter/material.dart';
-import 'package:web/helpers.dart';
+import 'package:web/web.dart';
 
-import '../../shared/banner_messages.dart';
-import '../../shared/common_widgets.dart';
+import '../../shared/config_specific/copy_to_clipboard/copy_to_clipboard.dart';
 import '../../shared/globals.dart';
+import '../../shared/managers/banner_messages.dart';
+import '../../shared/ui/common_widgets.dart';
+import '../../shared/utils/utils.dart';
 import '_controller_web.dart';
 import 'controller.dart';
 
@@ -57,9 +60,7 @@ class _EmbeddedExtensionState extends State<EmbeddedExtension>
           if (refreshing) {
             return const CenteredCircularProgressIndicator();
           }
-          return HtmlElementView(
-            viewType: _embeddedExtensionController.viewId,
-          );
+          return HtmlElementView(viewType: _embeddedExtensionController.viewId);
         },
       ),
     );
@@ -115,8 +116,9 @@ class _ExtensionIFrameController extends DisposableController
     );
 
     autoDisposeStreamSubscription(
-      embeddedExtensionController.extensionPostEventStream.stream
-          .listen((event) async {
+      embeddedExtensionController.extensionPostEventStream.stream.listen((
+        event,
+      ) async {
         final ready = await _pingExtensionUntilReady();
         if (ready) {
           switch (event.type) {
@@ -131,19 +133,24 @@ class _ExtensionIFrameController extends DisposableController
           // request or show a more permanent error UI where we guide them to
           // file an issue against the extension package.
           notificationService.pushError(
-            'Something went wrong.'
-            ' ${embeddedExtensionController.extensionConfig.name} extension is '
+            'Something went wrong. The '
+            '${embeddedExtensionController.extensionConfig.name} extension is '
             'not ready.',
+            reportExplanation:
+                'The extension did not respond to multiple '
+                'DevToolsExtensionEventType.ping events with the expected '
+                'DevToolsExtensionEventType.pong event.',
           );
         }
       }),
     );
 
-    addAutoDisposeListener(preferences.darkModeTheme, () {
+    addAutoDisposeListener(preferences.darkModeEnabled, () {
       updateTheme(
-        theme: preferences.darkModeTheme.value
-            ? ExtensionEventParameters.themeValueDark
-            : ExtensionEventParameters.themeValueLight,
+        theme:
+            isDarkThemeEnabled()
+                ? ExtensionEventParameters.themeValueDark
+                : ExtensionEventParameters.themeValueLight,
       );
     });
   }
@@ -159,8 +166,11 @@ class _ExtensionIFrameController extends DisposableController
     final message = event.toJson();
     assert(
       embeddedExtensionController.extensionIFrame.contentWindow != null,
-      'Something went wrong. The iFrame\'s contentWindow is null after the'
-      ' _iFrameReady future completed.',
+      'Something went wrong. The '
+      '${embeddedExtensionController.extensionConfig.name} extension\'s iFrame '
+      'contentWindow is null after the _iFrameReady future completed. The '
+      'message that was being posted when the error occurred was:\n'
+      '${message.toString()}',
     );
     embeddedExtensionController.extensionIFrame.contentWindow!.postMessage(
       message.jsify(),
@@ -173,9 +183,10 @@ class _ExtensionIFrameController extends DisposableController
     if (extensionEvent != null) {
       onEventReceived(
         extensionEvent,
-        onUnknownEvent: () => notificationService.push(
-          'Unknown event received from extension: $extensionEvent}',
-        ),
+        onUnknownEvent:
+            () => notificationService.push(
+              'Unknown event received from extension: $extensionEvent}',
+            ),
       );
     }
   }
@@ -188,13 +199,15 @@ class _ExtensionIFrameController extends DisposableController
   Future<bool> _pingExtensionUntilReady() async {
     var ready = true;
     if (!_extensionHandlerReady.isCompleted) {
-      _pollForExtensionHandlerReady =
-          Timer.periodic(const Duration(milliseconds: 200), (_) {
-        // Once the extension UI is ready, the extension will receive this
-        // [DevToolsExtensionEventType.ping] message and return a
-        // [DevToolsExtensionEventType.pong] message, handled in [_handleMessage].
-        ping();
-      });
+      _pollForExtensionHandlerReady = Timer.periodic(
+        const Duration(milliseconds: 200),
+        (_) {
+          // Once the extension UI is ready, the extension will receive this
+          // [DevToolsExtensionEventType.ping] message and return a
+          // [DevToolsExtensionEventType.pong] message, handled in [_handleMessage].
+          ping();
+        },
+      );
 
       await _extensionHandlerReady.future.timeout(
         _pollUntilReadyTimeout,
@@ -265,18 +278,19 @@ class _ExtensionIFrameController extends DisposableController
 
     switch (event.type) {
       case DevToolsExtensionEventType.pong:
-        if (!_extensionHandlerReady.isCompleted) {
-          _extensionHandlerReady.complete();
-        }
+        _extensionHandlerReady.safeComplete();
         break;
       case DevToolsExtensionEventType.vmServiceConnection:
-        final service = serviceConnection.serviceManager.service;
-        updateVmServiceConnection(uri: service?.wsUri);
+        updateVmServiceConnection(
+          uri: serviceConnection.serviceManager.serviceUri,
+        );
         break;
       case DevToolsExtensionEventType.showNotification:
         _handleShowNotification(event);
       case DevToolsExtensionEventType.showBannerMessage:
         _handleShowBannerMessage(event);
+      case DevToolsExtensionEventType.copyToClipboard:
+        _handleCopyToClipboard(event);
       default:
         onUnknownEvent?.call();
     }
@@ -291,7 +305,7 @@ class _ExtensionIFrameController extends DisposableController
     final showBannerMessageEvent = ShowBannerMessageExtensionEvent.from(event);
     final bannerMessageType =
         BannerMessageType.parse(showBannerMessageEvent.bannerMessageType) ??
-            BannerMessageType.warning;
+        BannerMessageType.warning;
     final bannerMessage = BannerMessage(
       messageType: bannerMessageType,
       key: Key(
@@ -310,6 +324,17 @@ class _ExtensionIFrameController extends DisposableController
       bannerMessage,
       callInPostFrameCallback: false,
       ignoreIfAlreadyDismissed: showBannerMessageEvent.ignoreIfAlreadyDismissed,
+    );
+  }
+
+  void _handleCopyToClipboard(DevToolsExtensionEvent event) {
+    final copyToClipboardEvent = CopyToClipboardExtensionEvent.from(event);
+    unawaited(
+      copyToClipboard(
+        copyToClipboardEvent.content,
+        successMessage: copyToClipboardEvent.successMessage,
+        showSuccessMessageOnFallback: true,
+      ),
     );
   }
 }

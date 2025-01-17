@@ -1,6 +1,6 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 // This file contain low level utils, i.e. utils that do not depend on
 // libraries in this package.
@@ -10,7 +10,6 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:ansi_up/ansi_up.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,11 +18,13 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
 
+import 'ansi_utils.dart';
+import 'byte_utils.dart';
 import 'simple_items.dart';
 
 final _log = Logger('utils');
 
-bool collectionEquals(e1, e2, {bool ordered = true}) {
+bool collectionEquals(Object? e1, Object? e2, {bool ordered = true}) {
   if (ordered) {
     return const DeepCollectionEquality().equals(e1, e2);
   }
@@ -31,98 +32,16 @@ bool collectionEquals(e1, e2, {bool ordered = true}) {
 }
 
 // 2^52 is the max int for dart2js.
-final int maxJsInt = pow(2, 52) as int;
+final maxJsInt = pow(2, 52) as int;
 
-final NumberFormat nf = NumberFormat.decimalPattern();
+final nf = NumberFormat.decimalPattern();
 
 String percent(double d, {int fractionDigits = 2}) =>
     '${(d * 100).toStringAsFixed(fractionDigits)}%';
 
 /// Unifies printing of retained size to avoid confusion related to different rounding.
-String? prettyPrintRetainedSize(int? bites) => prettyPrintBytes(
-      bites,
-      includeUnit: true,
-      kbFractionDigits: 1,
-    );
-
-String? prettyPrintBytes(
-  num? bytes, {
-  int kbFractionDigits = 0,
-  int mbFractionDigits = 1,
-  int gbFractionDigits = 1,
-  bool includeUnit = false,
-  num roundingPoint = 1.0,
-  int maxBytes = 52,
-}) {
-  if (bytes == null) {
-    return null;
-  }
-  // TODO(peterdjlee): Generalize to handle different kbFractionDigits.
-  // Ensure a small number of bytes does not print as 0 KB.
-  // If bytes >= maxBytes and kbFractionDigits == 1, it will start rounding to 0.1 KB.
-  if (bytes.abs() < maxBytes && kbFractionDigits == 1) {
-    var output = bytes.toString();
-    if (includeUnit) {
-      output += ' B';
-    }
-    return output;
-  }
-  final sizeInKB = bytes.abs() / 1024.0;
-  final sizeInMB = sizeInKB / 1024.0;
-  final sizeInGB = sizeInMB / 1024.0;
-
-  if (sizeInGB >= roundingPoint) {
-    return printGB(
-      bytes,
-      fractionDigits: gbFractionDigits,
-      includeUnit: includeUnit,
-    );
-  } else if (sizeInMB >= roundingPoint) {
-    return printMB(
-      bytes,
-      fractionDigits: mbFractionDigits,
-      includeUnit: includeUnit,
-    );
-  } else {
-    return printKB(
-      bytes,
-      fractionDigits: kbFractionDigits,
-      includeUnit: includeUnit,
-    );
-  }
-}
-
-String printKB(num bytes, {int fractionDigits = 0, bool includeUnit = false}) {
-  final NumberFormat kbPattern = NumberFormat.decimalPattern()
-    ..maximumFractionDigits = fractionDigits;
-
-  // We add ((1024/2)-1) to the value before formatting so that a non-zero byte
-  // value doesn't round down to 0. If showing decimal points, let it round normally.
-  // TODO(peterdjlee): Round up to the respective digit when fractionDigits > 0.
-  final processedBytes = fractionDigits == 0 ? bytes + 511 : bytes;
-  var output = kbPattern.format(processedBytes / 1024);
-  if (includeUnit) {
-    output += ' KB';
-  }
-  return output;
-}
-
-String printMB(num bytes, {int fractionDigits = 1, bool includeUnit = false}) {
-  var output = (bytes / (1024 * 1024.0)).toStringAsFixed(fractionDigits);
-  if (includeUnit) {
-    output += ' MB';
-  }
-  return output;
-}
-
-String printGB(num bytes, {int fractionDigits = 1, bool includeUnit = false}) {
-  var output =
-      (bytes / (1024 * 1024.0 * 1024.0)).toStringAsFixed(fractionDigits);
-  if (includeUnit) {
-    output += ' GB';
-  }
-  return output;
-}
+String? prettyPrintRetainedSize(int? bytes) =>
+    prettyPrintBytes(bytes, includeUnit: true);
 
 enum DurationDisplayUnit {
   micros('μs'),
@@ -249,7 +168,7 @@ Future<void> delayToReleaseUiThread({int micros = 0}) async {
 /// Use in long calculations, to release UI thread after each N steps.
 class UiReleaser {
   UiReleaser({this.stepsBetweenDelays = 100000, this.delayLength = 0})
-      : assert(stepsBetweenDelays > 0);
+    : assert(stepsBetweenDelays > 0);
 
   final int stepsBetweenDelays;
   final int delayLength;
@@ -364,7 +283,7 @@ Stream combineStreams(Stream a, Stream b, Stream c) {
 class Property<T> {
   Property(this._value);
 
-  final StreamController<T> _changeController = StreamController<T>.broadcast();
+  final _changeController = StreamController<T>.broadcast();
   T _value;
 
   T get value => _value;
@@ -446,7 +365,7 @@ typedef RateLimiterCallback = Future<void> Function();
 /// specified rate and that at most one async [callback] is running at a time.
 class RateLimiter {
   RateLimiter(double requestsPerSecond, this.callback)
-      : delayBetweenRequests = 1000 ~/ requestsPerSecond;
+    : delayBetweenRequests = 1000 ~/ requestsPerSecond;
 
   final RateLimiterCallback callback;
   Completer<void>? _pendingRequest;
@@ -527,10 +446,7 @@ class RateLimiter {
 /// remaining time units supported by [Duration] - (seconds, minutes, etc.). If
 /// you add a unit of time to this enum, modify the toString() method in
 /// [TimeRange] to handle the new case.
-enum TimeUnit {
-  microseconds,
-  milliseconds,
-}
+enum TimeUnit { microseconds, milliseconds }
 
 class TimeRange {
   TimeRange({this.singleAssignment = true});
@@ -599,7 +515,6 @@ class TimeRange {
       case TimeUnit.microseconds:
         return '[${_start?.inMicroseconds} μs - ${end?.inMicroseconds} μs]';
       case TimeUnit.milliseconds:
-      default:
         return '[${_start?.inMilliseconds} ms - ${end?.inMilliseconds} ms]';
     }
   }
@@ -654,7 +569,7 @@ double safeDivide(
 ///
 /// Only the object that created this reporter should call [notify].
 class Reporter implements Listenable {
-  final Set<VoidCallback> _listeners = {};
+  final _listeners = <VoidCallback>{};
 
   /// Adds [callback] to this reporter.
   ///
@@ -679,7 +594,7 @@ class Reporter implements Listenable {
   /// a notification callback leads to a change in the listeners,
   /// only the original listeners will be called.
   void notify() {
-    for (var callback in _listeners.toList()) {
+    for (final callback in _listeners.toList()) {
       callback();
     }
   }
@@ -718,10 +633,15 @@ String toStringAsFixed(double num, [int fractionDigit = 1]) {
   return num.toStringAsFixed(fractionDigit);
 }
 
-extension SafeAccessList<T> on List<T> {
+extension SafeListOperations<T> on List<T> {
   T? safeGet(int index) => index < 0 || index >= length ? null : this[index];
 
   T? safeRemoveLast() => isNotEmpty ? removeLast() : null;
+
+  List<T> safeSublist(int start, [int? end]) {
+    if (start >= length || start >= (end ?? length)) return <T>[];
+    return sublist(max(start, 0), min(length, end ?? length));
+  }
 }
 
 extension SafeAccess<T> on Iterable<T> {
@@ -757,10 +677,7 @@ class Range {
   int get hashCode => Object.hash(begin, end);
 }
 
-enum SortDirection {
-  ascending,
-  descending,
-}
+enum SortDirection { ascending, descending }
 
 /// A Range-like class that works for inclusive ranges of lines in source code.
 class LineRange {
@@ -901,31 +818,29 @@ class MovingAverage {
   }
 }
 
-List<TextSpan> processAnsiTerminalCodes(String? input, TextStyle defaultStyle) {
-  if (input == null) {
-    return [];
-  }
-  return decodeAnsiColorEscapeCodes(input, AnsiUp())
-      .map(
-        (entry) => TextSpan(
-          text: entry.text,
-          style: entry.style.isEmpty
-              ? defaultStyle
-              : TextStyle(
-                  color: entry.fgColor != null
-                      ? colorFromAnsi(entry.fgColor!)
-                      : null,
-                  backgroundColor: entry.bgColor != null
-                      ? colorFromAnsi(entry.bgColor!)
-                      : null,
-                  fontWeight: entry.bold ? FontWeight.bold : FontWeight.normal,
-                ),
-        ),
-      )
-      .toList();
+List<TextSpan> textSpansFromAnsi(String input, TextStyle defaultStyle) {
+  final parser = AnsiParser(input);
+  return parser.parse().map((entry) {
+    final styled = entry.bold || entry.fgColor != null || entry.bgColor != null;
+    return TextSpan(
+      text: entry.text,
+      style:
+          styled
+              ? TextStyle(
+                color: ansiToColor(entry.fgColor),
+                backgroundColor: ansiToColor(entry.bgColor),
+                fontWeight: entry.bold ? FontWeight.bold : FontWeight.normal,
+              )
+              : defaultStyle,
+    );
+  }).toList();
 }
 
-Color colorFromAnsi(List<int> ansiInput) {
+Color? ansiToColor(List<int>? ansiInput) {
+  if (ansiInput == null) {
+    return null;
+  }
+
   assert(ansiInput.length == 3, 'Ansi color list should contain 3 elements');
   return Color.fromRGBO(ansiInput[0], ansiInput[1], ansiInput[2], 1);
 }
@@ -933,14 +848,14 @@ Color colorFromAnsi(List<int> ansiInput) {
 /// An extension on [LogicalKeySet] to provide user-facing names for key
 /// bindings.
 extension LogicalKeySetExtension on LogicalKeySet {
-  static final Set<LogicalKeyboardKey> _modifiers = {
+  static final _modifiers = <LogicalKeyboardKey>{
     LogicalKeyboardKey.alt,
     LogicalKeyboardKey.control,
     LogicalKeyboardKey.meta,
     LogicalKeyboardKey.shift,
   };
 
-  static final Map<LogicalKeyboardKey, String> _modifierNames = {
+  static final _modifierNames = <LogicalKeyboardKey, String>{
     LogicalKeyboardKey.alt: 'Alt',
     LogicalKeyboardKey.control: 'Control',
     LogicalKeyboardKey.meta: 'Meta',
@@ -951,17 +866,17 @@ extension LogicalKeySetExtension on LogicalKeySet {
   String describeKeys({bool isMacOS = false}) {
     // Put the modifiers first. If it has a synonym, then it's something like
     // shiftLeft, altRight, etc.
-    final List<LogicalKeyboardKey> sortedKeys = keys.toList()
-      ..sort((a, b) {
-        final aIsModifier = a.synonyms.isNotEmpty || _modifiers.contains(a);
-        final bIsModifier = b.synonyms.isNotEmpty || _modifiers.contains(b);
-        if (aIsModifier && !bIsModifier) {
-          return -1;
-        } else if (bIsModifier && !aIsModifier) {
-          return 1;
-        }
-        return a.keyLabel.compareTo(b.keyLabel);
-      });
+    final sortedKeys =
+        keys.toList()..sort((a, b) {
+          final aIsModifier = a.synonyms.isNotEmpty || _modifiers.contains(a);
+          final bIsModifier = b.synonyms.isNotEmpty || _modifiers.contains(b);
+          if (aIsModifier && !bIsModifier) {
+            return -1;
+          } else if (bIsModifier && !aIsModifier) {
+            return 1;
+          }
+          return a.keyLabel.compareTo(b.keyLabel);
+        });
 
     return sortedKeys.map((key) {
       if (_modifiers.contains(key)) {
@@ -983,13 +898,9 @@ typedef DevToolsJsonFileHandler = void Function(DevToolsJsonFile file);
 class DevToolsJsonFile extends DevToolsFile<Object> {
   const DevToolsJsonFile({
     required String name,
-    required DateTime lastModifiedTime,
-    required Object data,
-  }) : super(
-          path: name,
-          lastModifiedTime: lastModifiedTime,
-          data: data,
-        );
+    required super.lastModifiedTime,
+    required super.data,
+  }) : super(path: name);
 }
 
 class DevToolsFile<T> {
@@ -1025,8 +936,10 @@ extension StringExtension on String {
       return contains(pattern);
     } else if (pattern is String) {
       final lowerCase = _lowercaseLookup.putIfAbsent(this, () => toLowerCase());
-      final strLowerCase =
-          _lowercaseLookup.putIfAbsent(pattern, () => pattern.toLowerCase());
+      final strLowerCase = _lowercaseLookup.putIfAbsent(
+        pattern,
+        () => pattern.toLowerCase(),
+      );
       return lowerCase.contains(strLowerCase);
     }
     throw Exception(
@@ -1035,35 +948,21 @@ extension StringExtension on String {
     );
   }
 
-  /// Whether [query] is a case insensitive "fuzzy match" for this String.
+  /// Whether [other] is a case insensitive match for this String.
   ///
-  /// For example, the query "hwf" would be a fuzzy match for the String
-  /// "hello_world_file".
-  bool caseInsensitiveFuzzyMatch(String query) {
-    query = query.toLowerCase();
-    final lowercase = toLowerCase();
-    final it = query.characters.iterator;
-    var strIndex = 0;
-    while (it.moveNext()) {
-      final char = it.current;
-      var foundChar = false;
-      for (int i = strIndex; i < lowercase.length; i++) {
-        if (lowercase[i] == char) {
-          strIndex = i + 1;
-          foundChar = true;
-          break;
-        }
-      }
-      if (!foundChar) {
-        return false;
-      }
+  /// If [pattern] is a [RegExp], this method will return true if and only if
+  /// this String is a complete [RegExp] match, meaning that the regular
+  /// expression finds a match with starting index 0 and ending index
+  /// [this.length].
+  bool caseInsensitiveEquals(Pattern? pattern) {
+    if (pattern is RegExp) {
+      assert(!pattern.isCaseSensitive);
+      final completeMatch = pattern
+          .allMatches(this)
+          .firstWhereOrNull((match) => match.start == 0 && match.end == length);
+      return completeMatch != null;
     }
-    return true;
-  }
-
-  /// Whether [other] is a case insensitive match for this String
-  bool caseInsensitiveEquals(String? other) {
-    return toLowerCase() == other?.toLowerCase();
+    return toLowerCase() == pattern.toString().toLowerCase();
   }
 
   /// Find all case insensitive matches of query in this String
@@ -1091,41 +990,46 @@ extension IterableExtension<T> on Iterable<T> {
 }
 
 extension ListExtension<T> on List<T> {
-  List<T> joinWith(T separator) {
+  List<T> joinWith(
+    T separator, {
+    bool includeTrailing = false,
+    bool includeLeading = false,
+  }) {
     return [
+      if (includeLeading) separator,
       for (int i = 0; i < length; i++) ...[
         this[i],
         if (i != length - 1) separator,
       ],
+      if (includeTrailing) separator,
     ];
-  }
-
-  bool containsWhere(bool Function(T element) test) {
-    for (var e in this) {
-      if (test(e)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   T get second => this[1];
 
   T get third => this[2];
+
+  List<int> allIndicesWhere(bool Function(T element) test) {
+    final indices = <int>[];
+    for (var i = 0; i < length; i++) {
+      if (test(this[i])) {
+        indices.add(i);
+      }
+    }
+    return indices;
+  }
+}
+
+extension NullableListExtension<T> on List<T>? {
+  bool get isNullOrEmpty {
+    final self = this;
+    return self == null || self.isEmpty;
+  }
 }
 
 extension SetExtension<T> on Set<T> {
-  bool containsWhere(bool Function(T element) test) {
-    for (var e in this) {
-      if (test(e)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   bool containsAny(Iterable<T> any) {
-    for (var e in any) {
+    for (final e in any) {
       if (contains(e)) {
         return true;
       }
@@ -1138,65 +1042,6 @@ extension UiListExtension<T> on List<T> {
   int get numSpacers => max(0, length - 1);
 }
 
-String simplifyDevToolsUrl(String url) {
-  // DevTools urls can have the form:
-  // http://localhost:123/?key=value
-  // http://localhost:123/#/?key=value
-  // http://localhost:123/#/page-id?key=value
-  // Since we just want the query params, we will modify the url to have an
-  // easy-to-parse form.
-  return url.replaceFirst(RegExp(r'#\/(\w*)[?]'), '?');
-}
-
-Map<String, String> devToolsQueryParams(String url) {
-  final modifiedUrl = simplifyDevToolsUrl(url);
-  final uri = Uri.parse(modifiedUrl);
-  return uri.queryParameters;
-}
-
-/// Gets a VM Service URI from a query string.
-///
-/// We read from the 'uri' value if it exists; otherwise we create a uri from
-/// the from 'port' and 'token' values.
-Uri? getServiceUriFromQueryString(String? location) {
-  if (location == null) {
-    return null;
-  }
-
-  final queryParams = Uri.parse(location).queryParameters;
-
-  // First try to use uri.
-  if (queryParams['uri'] != null) {
-    final uri = Uri.tryParse(queryParams['uri']!);
-
-    // Lots of things are considered valid URIs (including empty strings
-    // and single letters) since they can be relative, so we need to do some
-    // extra checks.
-    if (uri != null &&
-        uri.isAbsolute &&
-        (uri.isScheme('ws') ||
-            uri.isScheme('wss') ||
-            uri.isScheme('http') ||
-            uri.isScheme('https') ||
-            uri.isScheme('sse') ||
-            uri.isScheme('sses'))) {
-      return uri;
-    }
-  }
-
-  // Otherwise try 'port', 'token', and 'host'.
-  final port = int.tryParse(queryParams['port'] ?? '');
-  final token = queryParams['token'];
-  final host = queryParams['host'] ?? 'localhost';
-  if (port != null) {
-    return token == null
-        ? Uri.parse('ws://$host:$port/ws')
-        : Uri.parse('ws://$host:$port/$token/ws');
-  }
-
-  return null;
-}
-
 double safePositiveDouble(double value) {
   if (value.isNaN) return 0.0;
   return max(value, 0.0);
@@ -1206,10 +1051,7 @@ double safePositiveDouble(double value) {
 /// @param isUTC - if true for testing, the UTC locale is used (instead of
 /// the user's locale). Tests will then pass when run in any timezone. All
 /// formatted timestamps are displayed using the UTC locale.
-String prettyTimestamp(
-  int? timestamp, {
-  bool isUtc = false,
-}) {
+String prettyTimestamp(int? timestamp, {bool isUtc = false}) {
   if (timestamp == null) return '';
   final timestampDT = DateTime.fromMillisecondsSinceEpoch(
     timestamp,
@@ -1232,58 +1074,50 @@ const connectToNewAppText = 'Connect to a new app';
 /// favor of a new request.
 class ProcessCancelledException implements Exception {}
 
-extension UriExtension on Uri {
-  Uri copyWith({
-    String? scheme,
-    String? userInfo,
-    String? host,
-    int? port,
-    Iterable<String>? pathSegments,
-    String? query,
-    Map<String, dynamic>? queryParameters,
-    String? fragment,
-  }) {
-    return Uri(
-      scheme: scheme ?? this.scheme,
-      userInfo: userInfo ?? this.userInfo,
-      host: host ?? this.host,
-      port: port ?? this.port,
-      pathSegments: pathSegments ?? this.pathSegments,
-      query: query ?? this.query,
-      queryParameters: queryParameters ?? this.queryParameters,
-      fragment: fragment ?? this.fragment,
-    );
-  }
-}
-
-Iterable<T> removeNullValues<T>(Iterable<T?> values) {
-  return values.whereType<T>();
-}
-
 // TODO(mtaylee): Prefer to use this helper method whenever a call to
 // .split('/').last is made on a String (usually on URIs).
 // See https://github.com/flutter/devtools/issues/4360.
 /// Returns the file name from a URI or path string, by splitting the [uri] at
 /// the directory separators '/', and returning the last element.
-String? fileNameFromUri(String? uri) => uri?.split('/').last;
+String? fileNameFromUri(String? uri) => uri?.split('/').lastOrNull;
 
 /// Calculates subtraction of two maps.
 ///
-/// Result map keys is union of the imput maps' keys.
+/// Result map keys is union of the input maps' keys.
 Map<K, R> subtractMaps<K, F, S, R>({
-  required Map<K, S>? substract,
+  required Map<K, S>? subtract,
   required Map<K, F>? from,
   required R? Function({required S? subtract, required F? from}) subtractor,
 }) {
   from ??= <K, F>{};
-  substract ??= <K, S>{};
+  subtract ??= <K, S>{};
 
   final result = <K, R>{};
-  final unionOfKeys = from.keys.toSet().union(substract.keys.toSet());
+  final unionOfKeys = from.keys.toSet().union(subtract.keys.toSet());
 
-  for (var key in unionOfKeys) {
-    final diff = subtractor(from: from[key], subtract: substract[key]);
+  for (final key in unionOfKeys) {
+    final diff = subtractor(from: from[key], subtract: subtract[key]);
     if (diff != null) result[key] = diff;
   }
   return result;
+}
+
+/// Returns the url (as a string) where the DevTools assets are served.
+///
+/// For Flutter apps and when DevTools is served via the `dart devtools`
+/// command, this url should be equivalent to [html.window.location.origin].
+/// However, when DevTools is served directly from DDS via the --observe flag,
+/// the authentication token and 'devtools/' path part are also required.
+///
+/// Examples:
+/// * 'http://127.0.0.1:61962/mb9Sw4gCYvU=/devtools/performance'
+///     ==> 'http://127.0.0.1:61962/mb9Sw4gCYvU=/devtools'
+/// * 'http://127.0.0.1:61962/performance' ==> 'http://127.0.0.1:61962'
+String devtoolsAssetsBasePath({required String origin, required String path}) {
+  const separator = '/';
+  final pathParts = path.split(separator);
+  // The last path part is the DevTools page (e.g. 'performance' or 'snapshot'),
+  // which is not part of the hosted asset path.
+  pathParts.removeLast();
+  return '$origin${pathParts.join(separator)}';
 }

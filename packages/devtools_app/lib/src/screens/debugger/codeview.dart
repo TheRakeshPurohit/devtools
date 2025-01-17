@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -14,20 +14,20 @@ import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:vm_service/vm_service.dart' hide Stack;
 
-import '../../shared/common_widgets.dart';
 import '../../shared/console/widgets/expandable_variable.dart';
 import '../../shared/diagnostics/dart_object_node.dart';
 import '../../shared/diagnostics/primitives/source_location.dart';
 import '../../shared/diagnostics/tree_builder.dart';
 import '../../shared/globals.dart';
-import '../../shared/history_viewport.dart';
 import '../../shared/primitives/flutter_widgets/linked_scroll_controller.dart';
 import '../../shared/primitives/listenable.dart';
 import '../../shared/primitives/utils.dart';
+import '../../shared/ui/common_widgets.dart';
+import '../../shared/ui/history_viewport.dart';
 import '../../shared/ui/hover.dart';
 import '../../shared/ui/search.dart';
 import '../../shared/ui/utils.dart';
-import '../../shared/utils.dart';
+import '../../shared/utils/utils.dart';
 import '../vm_developer/vm_service_private_extensions.dart';
 import 'breakpoints.dart';
 import 'codeview_controller.dart';
@@ -39,14 +39,15 @@ import 'key_sets.dart';
 
 final _log = Logger('codeview');
 
-final debuggerCodeViewFileOpenerKey =
-    GlobalKey(debugLabel: 'DebuggerCodeViewFileOpenerKey');
+final debuggerCodeViewFileOpenerKey = GlobalKey(
+  debugLabel: 'DebuggerCodeViewFileOpenerKey',
+);
 
 // TODO(kenz): consider moving lines / pausedPositions calculations to the
 // controller.
 class CodeView extends StatefulWidget {
   const CodeView({
-    Key? key,
+    super.key,
     required this.codeViewController,
     required this.scriptRef,
     required this.parsedScript,
@@ -55,16 +56,17 @@ class CodeView extends StatefulWidget {
     this.initialPosition,
     this.onSelected,
     this.enableHistory = true,
-  }) : super(key: key);
+  });
 
-  static const debuggerCodeViewHorizontalScrollbarKey =
-      Key('debuggerCodeViewHorizontalScrollbarKey');
+  static const debuggerCodeViewHorizontalScrollbarKey = Key(
+    'debuggerCodeViewHorizontalScrollbarKey',
+  );
 
-  static const debuggerCodeViewVerticalScrollbarKey =
-      Key('debuggerCodeViewVerticalScrollbarKey');
+  static const debuggerCodeViewVerticalScrollbarKey = Key(
+    'debuggerCodeViewVerticalScrollbarKey',
+  );
 
-  static double get rowHeight =>
-      isDense() ? scaleByFontFactor(16.0) : scaleByFontFactor(20.0);
+  static double get rowHeight => scaleByFontFactor(16.0);
 
   final CodeViewController codeViewController;
   final DebuggerController? debuggerController;
@@ -172,8 +174,9 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
     profileController?.dispose();
     textController.dispose();
     horizontalController.dispose();
-    widget.codeViewController.scriptLocation
-        .removeListener(_handleScriptLocationChanged);
+    widget.codeViewController.scriptLocation.removeListener(
+      _handleScriptLocationChanged,
+    );
     super.dispose();
   }
 
@@ -226,7 +229,8 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
       final lineCount = parsedScript?.lineCount;
       if (lineCount != null && lineCount * CodeView.rowHeight > extent) {
         final lineIndex = line - 1;
-        var scrollPosition = lineIndex * CodeView.rowHeight -
+        var scrollPosition =
+            lineIndex * CodeView.rowHeight -
             ((extent - CodeView.rowHeight) / 2);
         scrollPosition = scrollPosition.clamp(0.0, position.extentTotal);
         if (animate) {
@@ -247,8 +251,8 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
     verticalController.hasAttachedControllers
         ? updateScrollPositionImpl()
         : WidgetsBinding.instance.addPostFrameCallback(
-            (_) => updateScrollPositionImpl(),
-          );
+          (_) => updateScrollPositionImpl(),
+        );
   }
 
   @override
@@ -304,31 +308,18 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
           currentLine.add(span);
           if (span.toPlainText() == '\n') {
             lines.add(
-              TextSpan(
-                style: theme.fixedFontStyle,
-                children: currentLine,
-              ),
+              TextSpan(style: theme.fixedFontStyle, children: currentLine),
             );
             currentLine = <InlineSpan>[];
           }
           return true;
         });
-        lines.add(
-          TextSpan(
-            style: theme.fixedFontStyle,
-            children: currentLine,
-          ),
-        );
+        lines.add(TextSpan(style: theme.fixedFontStyle, children: currentLine));
       } else {
-        lines.addAll(
-          [
-            for (final line in scriptSource.split('\n'))
-              TextSpan(
-                style: theme.fixedFontStyle,
-                text: line,
-              ),
-          ],
-        );
+        lines.addAll([
+          for (final line in scriptSource.split('\n'))
+            TextSpan(style: theme.fixedFontStyle, text: line),
+        ]);
       }
     }
 
@@ -342,10 +333,11 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
             thumbVisibility: true,
             // Only listen for vertical scroll notifications (ignore those
             // from the nested horizontal SingleChildScrollView):
-            notificationPredicate: (ScrollNotification notification) =>
-                notification.depth == 1,
+            notificationPredicate:
+                (ScrollNotification notification) => notification.depth == 1,
             child: ValueListenableBuilder<StackFrameAndSourcePosition?>(
-              valueListenable: widget.debuggerController?.selectedStackFrame ??
+              valueListenable:
+                  widget.debuggerController?.selectedStackFrame ??
                   const FixedValueListenable<StackFrameAndSourcePosition?>(
                     null,
                   ),
@@ -353,13 +345,13 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
                 final pausedFrame =
                     frame?.scriptRef == scriptRef ? frame : null;
 
-                return Row(
-                  children: [
-                    ValueListenableBuilder<bool>(
-                      valueListenable:
-                          widget.codeViewController.showProfileInformation,
-                      builder: (context, showProfileInformation, _) {
-                        return Gutters(
+                return ValueListenableBuilder<bool>(
+                  valueListenable:
+                      widget.codeViewController.showProfileInformation,
+                  builder: (context, showProfileInformation, _) {
+                    return Row(
+                      children: [
+                        Gutters(
                           scriptRef: script,
                           gutterController: gutterController,
                           profileController: profileController,
@@ -371,49 +363,59 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
                           pausedFrame: pausedFrame,
                           parsedScript: parsedScript,
                           showProfileInformation: showProfileInformation,
-                        );
-                      },
-                    ),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final double fileWidth = calculateTextSpanWidth(
-                            findLongestTextSpan(lines),
-                          );
+                        ),
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final fileWidth = calculateTextSpanWidth(
+                                findLongestTextSpan(lines),
+                              );
 
-                          return Scrollbar(
-                            key:
-                                CodeView.debuggerCodeViewHorizontalScrollbarKey,
-                            thumbVisibility: true,
-                            controller: horizontalController,
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              controller: horizontalController,
-                              child: SizedBox(
-                                height: constraints.maxHeight,
-                                width: math.max(
-                                  constraints.maxWidth,
-                                  fileWidth,
+                              return Scrollbar(
+                                key:
+                                    CodeView
+                                        .debuggerCodeViewHorizontalScrollbarKey,
+                                thumbVisibility: true,
+                                controller: horizontalController,
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  controller: horizontalController,
+                                  child: SizedBox(
+                                    height: constraints.maxHeight,
+                                    width: math.max(
+                                      constraints.maxWidth,
+                                      fileWidth,
+                                    ),
+                                    child: Lines(
+                                      height: constraints.maxHeight,
+                                      codeViewController:
+                                          widget.codeViewController,
+                                      scrollController: textController,
+                                      lines: lines,
+                                      selectedFrameNotifier:
+                                          widget
+                                              .debuggerController
+                                              ?.selectedStackFrame,
+                                      searchMatchesNotifier:
+                                          widget
+                                              .codeViewController
+                                              .searchMatches,
+                                      activeSearchMatchNotifier:
+                                          widget
+                                              .codeViewController
+                                              .activeSearchMatch,
+                                      showProfileInformation:
+                                          showProfileInformation,
+                                    ),
+                                  ),
                                 ),
-                                child: Lines(
-                                  height: constraints.maxHeight,
-                                  codeViewController: widget.codeViewController,
-                                  scrollController: textController,
-                                  lines: lines,
-                                  selectedFrameNotifier: widget
-                                      .debuggerController?.selectedStackFrame,
-                                  searchMatchesNotifier:
-                                      widget.codeViewController.searchMatches,
-                                  activeSearchMatchNotifier: widget
-                                      .codeViewController.activeSearchMatch,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -438,24 +440,25 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
           return scriptUri;
         },
         titleIcon: Icons.search,
-        onTitleTap: () => widget.codeViewController
-          ..toggleFileOpenerVisibility(true)
-          ..toggleSearchInFileVisibility(false),
+        onTitleTap:
+            () =>
+                widget.codeViewController
+                  ..toggleFileOpenerVisibility(true)
+                  ..toggleSearchInFileVisibility(false),
         controls: [
           ScriptPopupMenu(widget.codeViewController),
           ScriptHistoryPopupMenu(
             itemBuilder: _buildScriptMenuFromHistory,
             onSelected: (scriptRef) async {
-              await widget.codeViewController
-                  .showScriptLocation(ScriptLocation(scriptRef));
+              await widget.codeViewController.showScriptLocation(
+                ScriptLocation(scriptRef),
+              );
             },
             enabled: widget.codeViewController.scriptsHistory.hasScripts,
           ),
         ],
         contentBuilder: (context, ScriptRef? scriptRef) {
-          return Expanded(
-            child: contentBuilder(context, scriptRef),
-          );
+          return Expanded(child: contentBuilder(context, scriptRef));
         },
       );
     }
@@ -468,9 +471,7 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
       width: extraWideSearchFieldWidth,
       height: defaultTextFieldHeight,
       padding: EdgeInsets.zero,
-      child: FileSearchField(
-        codeViewController: widget.codeViewController,
-      ),
+      child: FileSearchField(codeViewController: widget.codeViewController),
     );
   }
 
@@ -483,8 +484,8 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
         searchFieldEnabled: parsedScript != null,
         shouldRequestFocus: true,
         searchFieldWidth: wideSearchFieldWidth,
-        onClose: () =>
-            widget.codeViewController.toggleSearchInFileVisibility(false),
+        onClose:
+            () => widget.codeViewController.toggleSearchInFileVisibility(false),
       ),
     );
   }
@@ -497,35 +498,33 @@ class _CodeViewState extends State<CodeView> with AutoDisposeMixin {
     return widget.codeViewController.scriptsHistory.openedScripts
         .take(scriptHistorySize)
         .map((scriptRef) {
-      return PopupMenuItem(
-        value: scriptRef,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              ScriptRefUtils.fileName(scriptRef),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          return PopupMenuItem(
+            value: scriptRef,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ScriptRefUtils.fileName(scriptRef),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  scriptRef.uri ?? '',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: Theme.of(context).subtleTextStyle,
+                ),
+              ],
             ),
-            Text(
-              scriptRef.uri ?? '',
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              style: Theme.of(context).subtleTextStyle,
-            ),
-          ],
-        ),
-      );
-    }).toList();
+          );
+        })
+        .toList();
   }
 }
 
 class CodeViewEmptyState extends StatelessWidget {
-  const CodeViewEmptyState({
-    super.key,
-    required this.widget,
-  });
+  const CodeViewEmptyState({super.key, required this.widget});
 
   final CodeView widget;
 
@@ -536,8 +535,8 @@ class CodeViewEmptyState extends StatelessWidget {
     return Center(
       child: ElevatedButton(
         autofocus: true,
-        onPressed: () =>
-            widget.codeViewController.toggleFileOpenerVisibility(true),
+        onPressed:
+            () => widget.codeViewController.toggleFileOpenerVisibility(true),
         child: Text(
           'Open a file ($openFileKeySetDescription)',
           style: theme.textTheme.titleMedium,
@@ -602,9 +601,7 @@ class ProfileInformationGutter extends StatelessWidget {
                 ),
               ],
             ),
-            const Center(
-              child: VerticalDivider(),
-            ),
+            const Center(child: VerticalDivider()),
           ],
         ),
       ),
@@ -635,28 +632,20 @@ class _ProfileInformationGutterHeader extends StatelessWidget {
                 Expanded(
                   child: DevToolsTooltip(
                     message: totalTimeTooltip,
-                    child: const Text(
-                      'Total %',
-                      textAlign: TextAlign.center,
-                    ),
+                    child: const Text('Total %', textAlign: TextAlign.center),
                   ),
                 ),
                 const SizedBox(width: denseSpacing),
                 Expanded(
                   child: DevToolsTooltip(
                     message: selfTimeTooltip,
-                    child: const Text(
-                      'Self %',
-                      textAlign: TextAlign.center,
-                    ),
+                    child: const Text('Self %', textAlign: TextAlign.center),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(
-            height: 0,
-          ),
+          const Divider(height: 0),
         ],
       ),
     );
@@ -664,10 +653,7 @@ class _ProfileInformationGutterHeader extends StatelessWidget {
 }
 
 class ProfileInformationGutterItem extends StatelessWidget {
-  const ProfileInformationGutterItem({
-    Key? key,
-    required this.profilerData,
-  }) : super(key: key);
+  const ProfileInformationGutterItem({super.key, required this.profilerData});
 
   final ProfileReportEntry profilerData;
 
@@ -708,7 +694,11 @@ class ProfilePercentageItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textStyle = theme.regularTextStyleWithColor(
+      colorScheme.coverageAndPerformanceTextColor,
+    );
     Color? color;
     if (percentage > 5) {
       color = colorScheme.performanceHighImpactColor;
@@ -721,12 +711,11 @@ class ProfilePercentageItem extends StatelessWidget {
       message: hoverText,
       child: Container(
         color: color,
-        padding: const EdgeInsets.symmetric(
-          horizontal: densePadding,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: densePadding),
         child: Text(
           '${percentage.toStringAsFixed(2)} %',
           textAlign: TextAlign.end,
+          style: textStyle,
         ),
       ),
     );
@@ -775,7 +764,8 @@ class Gutters extends StatelessWidget {
     //   - each character in the longest line number
     //   - one for the breakpoint dot
     //   - two for the paused arrow
-    final gutterWidth = assumedMonospaceCharacterWidth * 4 +
+    final gutterWidth =
+        assumedMonospaceCharacterWidth * 4 +
         assumedMonospaceCharacterWidth *
             (defaultEpsilon + math.log(math.max(lines.length, 100)) / math.ln10)
                 .truncateToDouble();
@@ -805,21 +795,21 @@ class Gutters extends StatelessWidget {
               // Disable dots for possible breakpoint locations.
               allowInteraction: !(debuggerController?.isSystemIsolate ?? false),
               showCodeCoverage: showCodeCoverage,
+              showProfileInformation: showProfileInformation,
             );
           },
         ),
-        const SizedBox(width: denseSpacing),
         !showProfileInformation
-            ? const SizedBox()
+            ? const SizedBox(width: denseSpacing)
             : Padding(
-                padding: const EdgeInsets.only(right: denseSpacing),
-                child: ProfileInformationGutter(
-                  scrollController: profileController!,
-                  lineCount: lineCount,
-                  lineOffset: lineOffset,
-                  sourceReport: sourceReport,
-                ),
+              padding: const EdgeInsets.only(right: denseSpacing),
+              child: ProfileInformationGutter(
+                scrollController: profileController!,
+                lineCount: lineCount,
+                lineOffset: lineOffset,
+                sourceReport: sourceReport,
               ),
+            ),
       ],
     );
   }
@@ -847,6 +837,7 @@ class Gutter extends StatelessWidget {
     required this.allowInteraction,
     required this.sourceReport,
     required this.showCodeCoverage,
+    required this.showProfileInformation,
   });
 
   final double gutterWidth;
@@ -860,13 +851,21 @@ class Gutter extends StatelessWidget {
   final IntCallback onPressed;
   final bool allowInteraction;
   final bool showCodeCoverage;
+  final bool showProfileInformation;
 
   @override
   Widget build(BuildContext context) {
-    final bpLineSet = Set.from(breakpoints.map((bp) => bp.line));
+    final bpLineSet = Set.of(breakpoints.map((bp) => bp.line));
     final theme = Theme.of(context);
-    final coverageLines =
-        sourceReport.coverageHitLines.union(sourceReport.coverageMissedLines);
+    final coverageLines = sourceReport.coverageHitLines.union(
+      sourceReport.coverageMissedLines,
+    );
+    // Used to account for the presence of `_ProfileInformationGutterHeader` at
+    // the top of the profiler gutter columns. Everything needs to be shifted
+    // down a single line so profiling information for line 1 isn't hidden by
+    // the header.
+    final profileInformationHeaderOffset = showProfileInformation ? 1 : 0;
+
     return Container(
       width: gutterWidth,
       decoration: BoxDecoration(
@@ -876,9 +875,13 @@ class Gutter extends StatelessWidget {
         controller: scrollController,
         physics: const ClampingScrollPhysics(),
         itemExtent: CodeView.rowHeight,
-        itemCount: lineCount,
+        itemCount: lineCount + profileInformationHeaderOffset,
         itemBuilder: (context, index) {
-          final lineNum = lineOffset + index + 1;
+          if (showProfileInformation && index == 0) {
+            return SizedBox(height: CodeView.rowHeight);
+          }
+          final lineNum =
+              lineOffset - profileInformationHeaderOffset + index + 1;
           bool? coverageHit;
           if (showCodeCoverage && coverageLines.contains(lineNum)) {
             coverageHit = sourceReport.coverageHitLines.contains(lineNum);
@@ -900,7 +903,7 @@ class Gutter extends StatelessWidget {
 
 class GutterItem extends StatelessWidget {
   const GutterItem({
-    Key? key,
+    super.key,
     required this.lineNumber,
     required this.isBreakpoint,
     required this.isExecutable,
@@ -908,7 +911,7 @@ class GutterItem extends StatelessWidget {
     required this.onPressed,
     required this.allowInteraction,
     required this.coverageHit,
-  }) : super(key: key);
+  });
 
   final int lineNumber;
 
@@ -935,11 +938,16 @@ class GutterItem extends StatelessWidget {
     final bpBoxSize = breakpointRadius * 2;
     final executionPointIndent = scaleByFontFactor(10.0);
     Color? color;
+    TextStyle? coverageTextStyleOverride;
     final hasCoverage = coverageHit;
-    if (hasCoverage != null && isExecutable) {
-      color = hasCoverage
-          ? theme.colorScheme.coverageHitColor
-          : theme.colorScheme.coverageMissColor;
+    if (hasCoverage != null) {
+      color =
+          hasCoverage
+              ? theme.colorScheme.coverageHitColor
+              : theme.colorScheme.coverageMissColor;
+      coverageTextStyleOverride = theme.regularTextStyleWithColor(
+        theme.colorScheme.coverageAndPerformanceTextColor,
+      );
     }
     return InkWell(
       onTap: onPressed,
@@ -968,7 +976,11 @@ class GutterItem extends StatelessWidget {
                   ),
                 ),
               ),
-            Text('$lineNumber', textAlign: TextAlign.end),
+            Text(
+              '$lineNumber',
+              textAlign: TextAlign.end,
+              style: coverageTextStyleOverride,
+            ),
             Container(
               padding: EdgeInsets.only(left: executionPointIndent),
               alignment: Alignment.centerLeft,
@@ -992,7 +1004,7 @@ class GutterItem extends StatelessWidget {
 
 class Lines extends StatefulWidget {
   const Lines({
-    Key? key,
+    super.key,
     required this.height,
     required this.codeViewController,
     required this.scrollController,
@@ -1000,7 +1012,8 @@ class Lines extends StatefulWidget {
     required this.searchMatchesNotifier,
     required this.activeSearchMatchNotifier,
     required this.selectedFrameNotifier,
-  }) : super(key: key);
+    required this.showProfileInformation,
+  });
 
   final double height;
   final CodeViewController codeViewController;
@@ -1009,6 +1022,7 @@ class Lines extends StatefulWidget {
   final ValueListenable<List<SourceToken>> searchMatchesNotifier;
   final ValueListenable<SourceToken?> activeSearchMatchNotifier;
   final ValueListenable<StackFrameAndSourcePosition?>? selectedFrameNotifier;
+  final bool showProfileInformation;
 
   @override
   State<Lines> createState() => _LinesState();
@@ -1052,27 +1066,39 @@ class _LinesState extends State<Lines> with AutoDisposeMixin {
   Widget build(BuildContext context) {
     final pausedFrame = widget.selectedFrameNotifier?.value;
     final pausedLine = pausedFrame?.line;
+    // Used to account for the presence of `_ProfileInformationGutterHeader` at
+    // the top of the profiler gutter columns. Everything needs to be shifted
+    // down a single line so profiling information for line 1 isn't hidden by
+    // the header.
+    final profileInformationHeaderOffset =
+        widget.showProfileInformation ? 1 : 0;
 
     return SelectionArea(
       child: ListView.builder(
         controller: widget.scrollController,
         physics: const ClampingScrollPhysics(),
         itemExtent: CodeView.rowHeight,
-        itemCount: widget.lines.length,
+        itemCount: widget.lines.length + profileInformationHeaderOffset,
         itemBuilder: (context, index) {
-          final lineNum = index + 1;
+          if (widget.showProfileInformation && index == 0) {
+            return SizedBox(height: CodeView.rowHeight);
+          }
+          final dataIndex = index - profileInformationHeaderOffset;
+          final lineNum = dataIndex + 1;
           final isPausedLine = pausedLine == lineNum;
           return ValueListenableBuilder<int>(
             valueListenable: widget.codeViewController.focusLine,
             builder: (context, focusLine, _) {
               final isFocusedLine = focusLine == lineNum;
               return LineItem(
-                lineContents: widget.lines[index],
+                lineContents: widget.lines[dataIndex],
                 pausedFrame: isPausedLine ? pausedFrame : null,
                 focused: isPausedLine || isFocusedLine,
-                searchMatches: _searchMatchesForLine(index),
+                searchMatches: _searchMatchesForLine(dataIndex),
                 activeSearchMatch:
-                    activeSearch?.position.line == index ? activeSearch : null,
+                    activeSearch?.position.line == dataIndex
+                        ? activeSearch
+                        : null,
               );
             },
           );
@@ -1090,9 +1116,11 @@ class _LinesState extends State<Lines> with AutoDisposeMixin {
   void _maybeScrollToLine(int? lineNumber) {
     if (lineNumber == null) return;
 
-    final isOutOfViewTop = lineNumber * CodeView.rowHeight <
+    final isOutOfViewTop =
+        lineNumber * CodeView.rowHeight <
         widget.scrollController.offset + CodeView.rowHeight;
-    final isOutOfViewBottom = lineNumber * CodeView.rowHeight >
+    final isOutOfViewBottom =
+        lineNumber * CodeView.rowHeight >
         widget.scrollController.offset + widget.height - CodeView.rowHeight;
 
     if (isOutOfViewTop || isOutOfViewBottom) {
@@ -1114,13 +1142,13 @@ class _LinesState extends State<Lines> with AutoDisposeMixin {
 
 class LineItem extends StatefulWidget {
   const LineItem({
-    Key? key,
+    super.key,
     required this.lineContents,
     this.pausedFrame,
     this.focused = false,
     this.searchMatches,
     this.activeSearchMatch,
-  }) : super(key: key);
+  });
 
   static double get _hoverWidth => scaleByFontFactor(400.0);
 
@@ -1142,16 +1170,17 @@ class _LineItemState extends State<LineItem>
   }) async {
     if (!serviceConnection.serviceManager.isMainIsolatePaused) return null;
 
-    final word = wordForHover(
-      event.localPosition.dx,
-      widget.lineContents,
-    );
+    final word = wordForHover(event.localPosition.dx, widget.lineContents);
 
-    if (word != '') {
+    if (word.isNotEmpty && !isPrimitiveValueOrNull(word)) {
       try {
         final response = await evalService.evalAtCurrentFrame(word);
-        final isolateRef = serviceConnection
-            .serviceManager.isolateManager.selectedIsolate.value;
+        final isolateRef =
+            serviceConnection
+                .serviceManager
+                .isolateManager
+                .selectedIsolate
+                .value;
         if (response is! InstanceRef) return null;
         final variable = DartObjectNode.fromValue(
           value: response,
@@ -1160,11 +1189,7 @@ class _LineItemState extends State<LineItem>
         await buildVariablesTree(variable);
         return HoverCardData(
           title: word,
-          contents: Material(
-            child: ExpandableVariable(
-              variable: variable,
-            ),
-          ),
+          contents: Material(child: ExpandableVariable(variable: variable)),
           width: LineItem._hoverWidth,
         );
       } catch (_) {
@@ -1242,23 +1267,22 @@ class _LineItemState extends State<LineItem>
   }
 
   Widget _hoverableLine() => HoverCardTooltip.async(
-        enabled: () => true,
-        asyncTimeout: 100,
-        asyncGenerateHoverCardData: _generateHoverCardData,
-        child: Text.rich(
-          searchAwareLineContents(),
-          maxLines: 1,
-        ),
-      );
+    enabled: () => true,
+    asyncTimeout: 100,
+    asyncGenerateHoverCardData: _generateHoverCardData,
+    child: Text.rich(searchAwareLineContents(), maxLines: 1),
+  );
 
   TextSpan searchAwareLineContents() {
     // If syntax highlighting is disabled for the script, then
     // `widget.lineContents` is simply a `TextSpan` with no children.
     final lineContents = widget.lineContents.children ?? [widget.lineContents];
-    final activeSearchAwareContents =
-        _activeSearchAwareLineContents(lineContents);
-    final allSearchAwareContents =
-        _searchMatchAwareLineContents(activeSearchAwareContents!);
+    final activeSearchAwareContents = _activeSearchAwareLineContents(
+      lineContents,
+    );
+    final allSearchAwareContents = _searchMatchAwareLineContents(
+      activeSearchAwareContents!,
+    );
     return TextSpan(
       children: allSearchAwareContents,
       style: widget.lineContents.style,
@@ -1289,23 +1313,19 @@ class _LineItemState extends State<LineItem>
           ),
         );
 
-        final matchStyle =
-            (span.style ?? DefaultTextStyle.of(context).style).copyWith(
-          color: Colors.black,
-          backgroundColor: matchColor,
-        );
+        final matchStyle = (span.style ?? DefaultTextStyle.of(context).style)
+            .copyWith(color: Colors.black, backgroundColor: matchColor);
 
         if (matchEndInSpan <= spanText.length) {
-          final matchText =
-              spanText.substring(matchStartInSpan, matchEndInSpan);
+          final matchText = spanText.substring(
+            matchStartInSpan,
+            matchEndInSpan,
+          );
           final trailingText = spanText.substring(matchEndInSpan);
           // Add the match and any part of [span] that occurs after the search
           // match.
           contentsWithMatch.addAll([
-            TextSpan(
-              text: matchText,
-              style: matchStyle,
-            ),
+            TextSpan(text: matchText, style: matchStyle),
             if (trailingText.isNotEmpty)
               TextSpan(
                 text: spanText.substring(matchEndInSpan),
@@ -1382,17 +1402,16 @@ class ScriptPopupMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<ScriptPopupMenuOption>(
       onSelected: (option) => option.onSelected(context, _controller),
-      itemBuilder: (_) => [
-        for (final menuOption in defaultScriptPopupMenuOptions)
-          menuOption.build(),
-        for (final extensionMenuOption in devToolsExtensionPoints
-            .buildExtraDebuggerScriptPopupMenuOptions())
-          extensionMenuOption.build(),
-      ],
-      child: Icon(
-        Icons.more_vert,
-        size: actionsIconSize,
-      ),
+      itemBuilder:
+          (_) => [
+            for (final menuOption in defaultScriptPopupMenuOptions)
+              menuOption.build(),
+            for (final extensionMenuOption
+                in devToolsEnvironmentParameters
+                    .buildExtraDebuggerScriptPopupMenuOptions())
+              extensionMenuOption.build(),
+          ],
+      child: Icon(Icons.more_vert, size: actionsIconSize),
     );
   }
 }
@@ -1422,10 +1441,7 @@ class ScriptHistoryPopupMenu extends StatelessWidget {
         actionsIconSize + denseSpacing,
         buttonMinWidth + denseSpacing,
       ),
-      child: Icon(
-        Icons.history,
-        size: actionsIconSize,
-      ),
+      child: Icon(Icons.history, size: actionsIconSize),
     );
   }
 }
@@ -1450,11 +1466,7 @@ class ScriptPopupMenuOption {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label),
-          if (icon != null)
-            Icon(
-              icon,
-              size: actionsIconSize,
-            ),
+          if (icon != null) Icon(icon, size: actionsIconSize),
         ],
       ),
     );
@@ -1471,9 +1483,12 @@ final defaultScriptPopupMenuOptions = [
 final copyPackagePathOption = ScriptPopupMenuOption(
   label: 'Copy package path',
   icon: Icons.content_copy,
-  onSelected: (_, controller) => Clipboard.setData(
-    ClipboardData(text: controller.scriptLocation.value?.scriptRef.uri ?? ''),
-  ),
+  onSelected:
+      (_, controller) => Clipboard.setData(
+        ClipboardData(
+          text: controller.scriptLocation.value?.scriptRef.uri ?? '',
+        ),
+      ),
 );
 
 final copyFilePathOption = ScriptPopupMenuOption(
@@ -1482,9 +1497,7 @@ final copyFilePathOption = ScriptPopupMenuOption(
   onSelected: (_, controller) {
     unawaited(() async {
       final filePath = await fetchScriptLocationFullFilePath(controller);
-      await Clipboard.setData(
-        ClipboardData(text: filePath ?? ''),
-      );
+      await Clipboard.setData(ClipboardData(text: filePath ?? ''));
     }());
   },
 );
@@ -1496,23 +1509,22 @@ Future<String?> fetchScriptLocationFullFilePath(
   String? filePath;
   final packagePath = controller.scriptLocation.value!.scriptRef.uri;
   if (packagePath != null) {
-    final isolateId = serviceConnection
-        .serviceManager.isolateManager.selectedIsolate.value!.id!;
-    filePath =
-        serviceConnection.serviceManager.resolvedUriManager.lookupFileUri(
-      isolateId,
-      packagePath,
-    );
+    final isolateId =
+        serviceConnection
+            .serviceManager
+            .isolateManager
+            .selectedIsolate
+            .value!
+            .id!;
+    filePath = serviceConnection.serviceManager.resolvedUriManager
+        .lookupFileUri(isolateId, packagePath);
     if (filePath == null) {
       await serviceConnection.serviceManager.resolvedUriManager.fetchFileUris(
         isolateId,
         [packagePath],
       );
-      filePath =
-          serviceConnection.serviceManager.resolvedUriManager.lookupFileUri(
-        isolateId,
-        packagePath,
-      );
+      filePath = serviceConnection.serviceManager.resolvedUriManager
+          .lookupFileUri(isolateId, packagePath);
     }
   }
   return filePath;
@@ -1583,9 +1595,7 @@ class GoToLineDialog extends StatelessWidget {
           ),
         ],
       ),
-      actions: const [
-        DialogCancelButton(),
-      ],
+      actions: const [DialogCancelButton()],
     );
   }
 }
@@ -1612,12 +1622,7 @@ class PositionedPopup extends StatelessWidget {
       valueListenable: isVisibleListenable,
       builder: (context, isVisible, _) {
         return isVisible
-            ? Positioned(
-                top: top,
-                left: left,
-                right: right,
-                child: child,
-              )
+            ? Positioned(top: top, left: left, right: right, child: child)
             : const SizedBox.shrink();
       },
     );
@@ -1631,4 +1636,8 @@ extension CodeViewColorScheme on ColorScheme {
 
   Color get coverageHitColor => performanceLowImpactColor;
   Color get coverageMissColor => performanceHighImpactColor;
+
+  // The default text color for dark mode is difficult to read when drawn on
+  // top of the profiler and coverage gutter items.
+  Color get coverageAndPerformanceTextColor => lightColorScheme.onSurface;
 }

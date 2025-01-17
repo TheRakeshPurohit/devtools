@@ -1,3 +1,8 @@
+<!--
+Copyright 2025 The Flutter Authors
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+-->
 ## DevTools Charting
 
 ![GitHub contributors](https://img.shields.io/github/contributors/flutter/devtools.svg)
@@ -39,7 +44,7 @@ In all cases, the above 4 traces share the same X-Axis time scale.  However, the
 First, create a StatefulWidget to contain the chart e.g.,
 ```
 class MyChart extends StatefulWidget {
-  MyChart({Key key}) : super(key: key);
+  MyChart({super.key});
 
   final controller = ChartController();
 

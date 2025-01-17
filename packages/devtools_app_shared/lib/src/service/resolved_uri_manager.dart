@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:vm_service/vm_service.dart';
 
@@ -85,10 +85,8 @@ final class ResolvedUriManager {
 
 /// Helper class for storing 1:1 mappings for full file paths to package paths.
 class _PackagePathMappings {
-  final Map<String, Map<String, String?>> _isolatePackageToFullPathMappings =
-      <String, Map<String, String?>>{};
-  final Map<String, Map<String, String?>> _isolateFullPathToPackageMappings =
-      <String, Map<String, String?>>{};
+  final _isolatePackageToFullPathMappings = <String, Map<String, String?>>{};
+  final _isolateFullPathToPackageMappings = <String, Map<String, String?>>{};
 
   /// Returns the package path to full path mapping if it has already
   /// been fetched.

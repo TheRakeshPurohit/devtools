@@ -1,6 +1,6 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -10,17 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:vm_service/vm_service.dart';
 
-import '../primitives/enum_utils.dart';
+import '../../screens/inspector_v2/inspector_data_models.dart';
 import '../primitives/utils.dart';
 import '../ui/icons.dart';
 import 'object_group_api.dart';
 import 'primitives/instance_ref.dart';
 import 'primitives/source_location.dart';
-
-final diagnosticLevelUtils = EnumUtils<DiagnosticLevel>(DiagnosticLevel.values);
-
-final treeStyleUtils =
-    EnumUtils<DiagnosticsTreeStyle>(DiagnosticsTreeStyle.values);
 
 /// Defines diagnostics data for a [value].
 ///
@@ -55,7 +50,7 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
   /// area using the right style.
   TextStyle? descriptionTextStyleFromBuild;
 
-  static final CustomIconMaker iconMaker = CustomIconMaker();
+  static final iconMaker = CustomIconMaker();
 
   static BoxConstraints deserializeConstraints(Map<String, Object?> json) {
     return BoxConstraints(
@@ -74,11 +69,11 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
       );
   }
 
-  static Size deserializeSize(Map<String, Object> json) {
-    return Size(
-      double.parse(json['width'] as String),
-      double.parse(json['height'] as String),
-    );
+  static Size? deserializeSize(Map<String, Object> json) {
+    final width = json['width'] as String?;
+    final height = json['height'] as String?;
+    if (width == null || height == null) return null;
+    return Size(double.parse(width), double.parse(height));
   }
 
   static FlexFit deserializeFlexFit(String? flexFit) {
@@ -143,8 +138,8 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
   RemoteDiagnosticsNode? _parentRenderElement;
 
   BoxConstraints get constraints => deserializeConstraints(
-        json['constraints'] as Map<String, Object?>? ?? {},
-      );
+    json['constraints'] as Map<String, Object?>? ?? {},
+  );
 
   BoxParentData get parentData =>
       deserializeParentData(json['parentData'] as Map<String, Object?>? ?? {});
@@ -152,9 +147,12 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
   // [deserializeSize] expects a parameter of type Map<String, Object> (note the
   // non-nullable Object), so we need to first type check as a Map and then we
   // can cast to the expected type.
-  Size get size => deserializeSize(
-        (json['size'] as Map?)?.cast<String, Object>() ?? <String, Object>{},
-      );
+  Size? get size {
+    final sizeMap = json['size'] as Map?;
+    return sizeMap == null
+        ? null
+        : deserializeSize(sizeMap.cast<String, Object>());
+  }
 
   bool get isLocalClass {
     final objectGroup = objectGroupApi;
@@ -233,16 +231,28 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
   /// will make the name self-evident.
   bool get showName => getBooleanMember('showName', true);
 
+  /// Whether or not the node should be indented in the Inspector Tree.
+  bool get shouldIndent {
+    final value = json['shouldIndent'] as bool?;
+
+    return value ??
+        style != DiagnosticsTreeStyle.flat &&
+            style != DiagnosticsTreeStyle.error;
+  }
+
   /// Description to show if the node has no displayed properties or children.
   String? getEmptyBodyDescription() => getStringMember('emptyBodyDescription');
 
-  late DiagnosticsTreeStyle style =
-      getStyleMember('style', DiagnosticsTreeStyle.sparse);
+  late DiagnosticsTreeStyle style = getStyleMember(
+    'style',
+    DiagnosticsTreeStyle.sparse,
+  );
 
   /// Dart class defining the diagnostic node.
-  /// For example, DiagnosticProperty<Color>, IntProperty, StringProperty, etc.
-  /// This should rarely be required except for cases where custom rendering is desired
-  /// of a specific Dart diagnostic class.
+  ///
+  /// For example: `DiagnosticProperty<Color>`, `IntProperty`, `StringProperty`.
+  /// This should rarely be required except for cases where custom rendering is
+  /// desired of a specific Dart diagnostic class.
   String? get type => getStringMember('type');
 
   /// Whether the description is enclosed in double quotes.
@@ -453,6 +463,32 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
     return json[memberName] as bool;
   }
 
+  LayoutProperties? computeLayoutProperties({required bool forFlexLayout}) {
+    if ((!forFlexLayout && !isBoxLayout) || (forFlexLayout && !isFlexLayout)) {
+      return null;
+    }
+    if (size == null) return null;
+    return forFlexLayout
+        ? FlexLayoutProperties.fromDiagnostics(this)
+        : LayoutProperties(this);
+  }
+
+  RemoteDiagnosticsNode? layoutRootNode({required bool forFlexLayout}) {
+    if (forFlexLayout && !isFlexLayout) return null;
+
+    if (forFlexLayout) {
+      return isFlex ? this : parent;
+    }
+
+    return this;
+  }
+
+  // Warning: This should only be used on a layout explorer node. A regular
+  // remote diagnostics node never has a "size" property.
+  bool get isBoxLayout => size != null;
+
+  bool get isFlexLayout => isFlex || (parent?.isFlex ?? false);
+
   DiagnosticLevel getLevelMember(
     String memberName,
     DiagnosticLevel defaultValue,
@@ -461,7 +497,7 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
     if (value == null) {
       return defaultValue;
     }
-    return diagnosticLevelUtils.enumEntry(value)!;
+    return DiagnosticLevel.values.byName(value);
   }
 
   DiagnosticsTreeStyle getStyleMember(
@@ -475,7 +511,7 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
     if (value == null) {
       return defaultValue;
     }
-    return treeStyleUtils.enumEntry(value)!;
+    return DiagnosticsTreeStyle.values.byName(value);
   }
 
   /// Returns a reference to the value the DiagnosticsNode object is describing.
@@ -517,8 +553,10 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
         default:
           return _valueProperties = Future.value();
       }
-      _valueProperties =
-          objectGroupApi?.getDartObjectProperties(valueRef, propertyNames);
+      _valueProperties = objectGroupApi?.getDartObjectProperties(
+        valueRef,
+        propertyNames,
+      );
     }
     return _valueProperties;
   }
@@ -568,6 +606,74 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
     return _children ?? [];
   }
 
+  RemoteDiagnosticsNode? get hideableGroupLeader =>
+      isHideableGroupLeader ? this : _hideableGroupLeader;
+
+  RemoteDiagnosticsNode? _hideableGroupLeader;
+
+  set hideableGroupLeader(RemoteDiagnosticsNode? newLeader) {
+    _hideableGroupLeader = newLeader;
+  }
+
+  bool get groupIsHidden => inHideableGroup && _groupIsHidden;
+
+  bool _groupIsHidden = true;
+
+  set groupIsHidden(bool newValue) {
+    _groupIsHidden = newValue;
+  }
+
+  bool get isHidden =>
+      inHideableGroup && !isHideableGroupLeader && groupIsHidden;
+
+  bool get inHideableGroup {
+    if (_alwaysVisible(this)) return false;
+    final parentIsHideable = parent != null && !_alwaysVisible(parent!);
+    final firstChildIsHideable =
+        childrenNow.isNotEmpty && !_alwaysVisible(childrenNow.first);
+
+    // A widget should only be included in a hideable group if either its parent
+    // or first child is hideable (if it's the only hideable widget then it's
+    // not part of a "group").
+    return parentIsHideable || firstChildIsHideable;
+  }
+
+  bool get isHideableGroupLeader {
+    return inHideableGroup && _hideableGroupSubordinates != null;
+  }
+
+  List<RemoteDiagnosticsNode>? get hideableGroupSubordinates =>
+      _hideableGroupSubordinates;
+  List<RemoteDiagnosticsNode>? _hideableGroupSubordinates;
+
+  void addHideableGroupSubordinate(RemoteDiagnosticsNode subordinate) {
+    (_hideableGroupSubordinates ??= <RemoteDiagnosticsNode>[]).add(subordinate);
+    subordinate.hideableGroupLeader = this;
+  }
+
+  void toggleHiddenGroup() {
+    // Only the hideable group leader can change the group's hidden state:
+    assert(isHideableGroupLeader);
+
+    final newHiddenValue = !_groupIsHidden;
+    _groupIsHidden = newHiddenValue;
+    if (isHideableGroupLeader) {
+      _hideableGroupSubordinates?.forEach(
+        (node) => node.groupIsHidden = newHiddenValue,
+      );
+    }
+  }
+
+  bool _alwaysVisible(RemoteDiagnosticsNode node) {
+    final isRoot = node.parent == null;
+    final hasMoreThanOneChild = node.hasChildren && node.childrenNow.length > 1;
+    final hasSiblings = (node.parent?.childrenNow ?? []).length > 1;
+    return isRoot ||
+        node.isCreatedByLocalProject ||
+        hasMoreThanOneChild ||
+        hasSiblings;
+  }
+
   Future<void> _computeChildren() async {
     _maybePopulateChildren();
     if (!hasChildren || _children != null) {
@@ -588,11 +694,7 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
   }
 
   Future<List<RemoteDiagnosticsNode>> _getChildrenHelper() {
-    return objectGroupApi!.getChildren(
-      valueRef,
-      isSummaryTree,
-      this,
-    );
+    return objectGroupApi!.getChildren(valueRef, isSummaryTree, this);
   }
 
   void _maybePopulateChildren() {
@@ -603,9 +705,13 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
     final jsonArray = json['children'] as List<Object?>?;
     if (jsonArray?.isNotEmpty == true) {
       final nodes = <RemoteDiagnosticsNode>[];
-      for (var element in jsonArray!.cast<Map<String, Object?>>()) {
-        final child =
-            RemoteDiagnosticsNode(element, objectGroupApi, false, parent);
+      for (final element in jsonArray!.cast<Map<String, Object?>>()) {
+        final child = RemoteDiagnosticsNode(
+          element,
+          objectGroupApi,
+          false,
+          parent,
+        );
         child.parent = this;
         nodes.add(child);
       }
@@ -622,7 +728,7 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
       cachedProperties = [];
       if (json.containsKey('properties')) {
         final jsonArray = json['properties'] as List<Object?>;
-        for (var element in jsonArray.cast<Map<String, Object?>>()) {
+        for (final element in jsonArray.cast<Map<String, Object?>>()) {
           cachedProperties!.add(
             RemoteDiagnosticsNode(element, objectGroupApi, true, parent),
           );
@@ -657,8 +763,8 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
     if (entries.length != node.json.entries.length) {
       return false;
     }
-    for (var entry in entries) {
-      final String key = entry.key;
+    for (final entry in entries) {
+      final key = entry.key;
       if (key == 'valueId') {
         continue;
       }
@@ -672,7 +778,7 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    for (var property in inlineProperties) {
+    for (final property in inlineProperties) {
       properties.add(DiagnosticsProperty(property.name, property));
     }
   }
@@ -682,7 +788,7 @@ class RemoteDiagnosticsNode extends DiagnosticableTree {
     final children = childrenNow;
     if (children.isEmpty) return const <DiagnosticsNode>[];
     final regularChildren = <DiagnosticsNode>[];
-    for (var child in children) {
+    for (final child in children) {
       regularChildren.add(child.toDiagnosticsNode());
     }
     return regularChildren;

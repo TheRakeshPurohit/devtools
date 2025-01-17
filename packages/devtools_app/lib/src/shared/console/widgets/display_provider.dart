@@ -1,6 +1,8 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+
+import 'dart:async';
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/foundation.dart';
@@ -10,43 +12,51 @@ import 'package:vm_service/vm_service.dart';
 
 import '../../diagnostics/dap_object_node.dart';
 import '../../diagnostics/dart_object_node.dart';
+import '../../framework/routing.dart';
+import '../../framework/screen.dart';
 import '../../globals.dart';
 import '../../primitives/utils.dart';
-import '../../routing.dart';
-import '../../screen.dart';
 import '../../ui/colors.dart';
 import 'description.dart';
 
 /// The display provider for variables fetched via the VM service protocol.
-class DisplayProvider extends StatelessWidget {
+class DisplayProvider extends StatefulWidget {
   const DisplayProvider({
     super.key,
     required this.variable,
     required this.onTap,
+    this.onCopy,
   });
 
   final DartObjectNode variable;
   final VoidCallback onTap;
+  final void Function(DartObjectNode)? onCopy;
 
+  @override
+  State<DisplayProvider> createState() => _DisplayProviderState();
+}
+
+class _DisplayProviderState extends State<DisplayProvider> {
+  bool isHovered = false;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (variable.text != null) {
+    if (widget.variable.text != null) {
       return InteractivityWrapper(
-        onTap: onTap,
+        onTap: widget.onTap,
         menuButtons: _getMenuButtons(context),
         child: Text.rich(
           TextSpan(
-            children: processAnsiTerminalCodes(
-              variable.text,
+            children: textSpansFromAnsi(
+              widget.variable.text!,
               theme.subtleFixedFontStyle,
             ),
           ),
         ),
       );
     }
-    final diagnostic = variable.ref?.diagnostic;
+    final diagnostic = widget.variable.ref?.diagnostic;
     if (diagnostic != null) {
       return DiagnosticsNodeDescription(
         diagnostic,
@@ -55,54 +65,102 @@ class DisplayProvider extends StatelessWidget {
       );
     }
 
-    final hasName = variable.name?.isNotEmpty ?? false;
-    return InteractivityWrapper(
-      onTap: onTap,
+    // Only enable hover behaviour when copy behaviour is provided.
+    final isHoverEnabled = widget.onCopy != null;
+
+    final hasName = widget.variable.name?.isNotEmpty ?? false;
+
+    // The tooltip can be hovered over in order to see the original text.
+    final originalDisplayValue = widget.variable.displayValue.toString();
+    // Only 1 line of text is permitted in the tree, since we only get 1 row.
+    // So replace all newlines with \\n so that the user can still see that
+    // there are new lines in the value.
+    final displayValue = originalDisplayValue.replaceAll('\n', '\\n');
+    final contents = InteractivityWrapper(
+      onTap: widget.onTap,
       menuButtons: _getMenuButtons(context),
-      child: Text.rich(
-        TextSpan(
-          text: hasName ? variable.name : null,
-          style: variable.artificialName
-              ? theme.subtleFixedFontStyle
-              : theme.fixedFontStyle.apply(
-                  color: theme.colorScheme.controlFlowSyntaxColor,
+      child: DevToolsTooltip(
+        message: originalDisplayValue,
+        child: Container(
+          color: isHovered ? Theme.of(context).highlightColor : null,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text.rich(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  TextSpan(
+                    text: hasName ? widget.variable.name : null,
+                    style:
+                        widget.variable.artificialName
+                            ? theme.subtleFixedFontStyle
+                            : theme.fixedFontStyle.apply(
+                              color: theme.colorScheme.controlFlowSyntaxColor,
+                            ),
+                    children: [
+                      if (hasName)
+                        TextSpan(text: ': ', style: theme.fixedFontStyle),
+                      TextSpan(
+                        text: displayValue,
+                        style:
+                            widget.variable.artificialValue
+                                ? theme.subtleFixedFontStyle
+                                : _variableDisplayStyle(theme, widget.variable),
+                      ),
+                    ],
+                  ),
                 ),
-          children: [
-            if (hasName)
-              TextSpan(
-                text: ': ',
-                style: theme.fixedFontStyle,
               ),
-            TextSpan(
-              text: variable.displayValue.toString(),
-              style: variable.artificialValue
-                  ? theme.subtleFixedFontStyle
-                  : _variableDisplayStyle(theme, variable),
-            ),
-          ],
+              if (isHovered && widget.onCopy != null)
+                DevToolsButton(
+                  icon: Icons.copy_outlined,
+                  outlined: false,
+                  onPressed: () => widget.onCopy!.call(widget.variable),
+                ),
+            ],
+          ),
         ),
       ),
     );
+
+    if (isHoverEnabled) {
+      return SelectionContainer.disabled(
+        child: MouseRegion(
+          onEnter: (_) {
+            setState(() {
+              isHovered = true;
+            });
+          },
+          onExit: (event) {
+            setState(() {
+              isHovered = false;
+            });
+          },
+          child: contents,
+        ),
+      );
+    }
+    return contents;
   }
 
-  List<ContextMenuButtonItem> _getMenuButtons(
-    BuildContext context,
-  ) {
+  List<ContextMenuButtonItem> _getMenuButtons(BuildContext context) {
     return [
-      if (variable.isRerootable)
+      if (widget.variable.isRerootable)
         ContextMenuButtonItem(
           onPressed: () {
             ContextMenuController.removeAny();
-            final ref = variable.ref;
-            serviceConnection.consoleService.appendBrowsableInstance(
-              instanceRef: variable.value as InstanceRef?,
-              isolateRef: ref?.isolateRef,
-              heapSelection: ref?.heapSelection,
+            final ref = widget.variable.ref;
+            unawaited(
+              serviceConnection.consoleService.appendBrowsableInstance(
+                instanceRef: widget.variable.value as InstanceRef?,
+                isolateRef: ref?.isolateRef,
+                heapSelection: ref?.heapSelection,
+              ),
             );
           },
           label: 'Reroot',
         ),
-      if (serviceConnection.inspectorService != null && variable.isRoot)
+      if (serviceConnection.inspectorService != null && widget.variable.isRoot)
         ContextMenuButtonItem(
           onPressed: () {
             ContextMenuController.removeAny();
@@ -113,16 +171,14 @@ class DisplayProvider extends StatelessWidget {
     ];
   }
 
-  void _handleInspect(
-    BuildContext context,
-  ) async {
+  void _handleInspect(BuildContext context) async {
     final router = DevToolsRouterDelegate.of(context);
     final inspectorService = serviceConnection.inspectorService;
-    if (await variable.inspectWidget()) {
+    if (await widget.variable.inspectWidget()) {
       router.navigateIfNotCurrent(ScreenMetaData.inspector.id);
     } else {
       if (inspectorService!.isDisposed) return;
-      final isInspectable = await variable.isInspectable;
+      final isInspectable = await widget.variable.isInspectable;
       if (inspectorService.isDisposed) return;
       if (isInspectable) {
         notificationService.push(
@@ -144,13 +200,13 @@ class DisplayProvider extends StatelessWidget {
       final value = variable.ref?.value;
       if (value != null) {
         switch (value.runtimeType) {
-          case String:
+          case const (String):
             kind = InstanceKind.kString;
             break;
-          case num:
+          case const (num):
             kind = InstanceKind.kInt;
             break;
-          case bool:
+          case const (bool):
             kind = InstanceKind.kBool;
             break;
         }
@@ -159,19 +215,13 @@ class DisplayProvider extends StatelessWidget {
     }
     switch (kind) {
       case InstanceKind.kString:
-        return style.apply(
-          color: theme.colorScheme.stringSyntaxColor,
-        );
+        return style.apply(color: theme.colorScheme.stringSyntaxColor);
       case InstanceKind.kInt:
       case InstanceKind.kDouble:
-        return style.apply(
-          color: theme.colorScheme.numericConstantSyntaxColor,
-        );
+        return style.apply(color: theme.colorScheme.numericConstantSyntaxColor);
       case InstanceKind.kBool:
       case InstanceKind.kNull:
-        return style.apply(
-          color: theme.colorScheme.modifierSyntaxColor,
-        );
+        return style.apply(color: theme.colorScheme.modifierSyntaxColor);
       default:
         return style;
     }
@@ -207,16 +257,10 @@ class DapDisplayProvider extends StatelessWidget {
           color: theme.colorScheme.controlFlowSyntaxColor,
         ),
         children: [
-          TextSpan(
-            text: ': ',
-            style: theme.fixedFontStyle,
-          ),
+          TextSpan(text: ': ', style: theme.fixedFontStyle),
           // TODO(https://github.com/flutter/devtools/issues/6056): Change text
           // style based on variable type.
-          TextSpan(
-            text: value,
-            style: theme.subtleFixedFontStyle,
-          ),
+          TextSpan(text: value, style: theme.subtleFixedFontStyle),
         ],
       ),
     );
@@ -250,7 +294,7 @@ class InteractivityWrapper extends StatefulWidget {
 }
 
 class _InteractivityWrapperState extends State<InteractivityWrapper> {
-  final ContextMenuController _contextMenuController = ContextMenuController();
+  final _contextMenuController = ContextMenuController();
 
   void _onTap() {
     ContextMenuController.removeAny();

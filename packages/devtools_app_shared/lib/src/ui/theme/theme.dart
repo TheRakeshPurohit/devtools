@@ -1,8 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-import 'dart:ui';
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:flutter/material.dart';
 
@@ -73,6 +71,7 @@ ThemeData _baseTheme({
     tabBarTheme: theme.tabBarTheme.copyWith(
       tabAlignment: TabAlignment.start,
       dividerColor: Colors.transparent,
+      labelStyle: theme.regularTextStyle,
       labelPadding:
           const EdgeInsets.symmetric(horizontal: defaultTabBarPadding),
     ),
@@ -90,6 +89,7 @@ ThemeData _baseTheme({
         minimumSize: Size(buttonMinWidth, defaultButtonHeight),
         fixedSize: Size.fromHeight(defaultButtonHeight),
         foregroundColor: theme.colorScheme.onSurface,
+        padding: const EdgeInsets.symmetric(horizontal: denseSpacing),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -105,11 +105,55 @@ ThemeData _baseTheme({
         fixedSize: Size.fromHeight(defaultButtonHeight),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: denseSpacing),
       ),
+    ),
+    menuButtonTheme: MenuButtonThemeData(
+      style: ButtonStyle(
+        textStyle: WidgetStatePropertyAll<TextStyle>(theme.regularTextStyle),
+        fixedSize: const WidgetStatePropertyAll<Size>(Size.fromHeight(24.0)),
+      ),
+    ),
+    dropdownMenuTheme: DropdownMenuThemeData(
+      textStyle: theme.regularTextStyle,
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(
       linearMinHeight: defaultLinearProgressIndicatorHeight,
     ),
+    primaryTextTheme: _devToolsTextTheme(theme, theme.primaryTextTheme),
+    textTheme: _devToolsTextTheme(theme, theme.textTheme),
+    colorScheme: theme.colorScheme.copyWith(
+      surface: backgroundColor,
+    ),
+  );
+}
+
+TextTheme _devToolsTextTheme(ThemeData theme, TextTheme textTheme) {
+  return textTheme.copyWith(
+    displayLarge: theme.boldTextStyle.copyWith(fontSize: 24),
+    displayMedium: theme.boldTextStyle.copyWith(fontSize: 22),
+    displaySmall: theme.boldTextStyle.copyWith(fontSize: 20),
+    headlineLarge: theme.regularTextStyle.copyWith(
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+    ),
+    headlineMedium: theme.regularTextStyle.copyWith(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+    ),
+    headlineSmall: theme.regularTextStyle.copyWith(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+    ),
+    titleLarge: theme._largeText.copyWith(fontWeight: FontWeight.w500),
+    titleMedium: theme.regularTextStyle.copyWith(fontWeight: FontWeight.w500),
+    titleSmall: theme._smallText.copyWith(fontWeight: FontWeight.w500),
+    bodyLarge: theme._largeText,
+    bodyMedium: theme.regularTextStyle,
+    bodySmall: theme._smallText,
+    labelLarge: theme._largeText,
+    labelMedium: theme.regularTextStyle,
+    labelSmall: theme._smallText,
   );
 }
 
@@ -134,11 +178,9 @@ const lightColorScheme = ColorScheme(
   errorContainer: Color(0xFFFFDAD5),
   onError: Color(0xFFFFFFFF),
   onErrorContainer: Color(0xFF410002),
-  background: Color(0xFFFFFFFF),
-  onBackground: Color(0xFF1B1B1F),
   surface: Color(0xFFFFFFFF),
   onSurface: Color(0xFF1B1B1F),
-  surfaceVariant: Color(0xFFE1E2EC),
+  surfaceContainerHighest: Color(0xFFE1E2EC),
   onSurfaceVariant: Color(0xFF44474F),
   outline: Color(0xFF75777F),
   onInverseSurface: Color(0xFFF2F0F4),
@@ -171,11 +213,9 @@ const darkColorScheme = ColorScheme(
   errorContainer: Color(0xFF930009),
   onError: Color(0xFF690004),
   onErrorContainer: Color(0xFFFFDAD5),
-  background: Color(0xFF1B1B1F),
-  onBackground: Color(0xFFE3E2E6),
   surface: Color(0xFF1B1B1F),
   onSurface: Color(0xFFC7C6CA),
-  surfaceVariant: Color(0xFF44474F),
+  surfaceContainerHighest: Color(0xFF44474F),
   onSurfaceVariant: Color(0xFFC4C6D0),
   outline: Color(0xFF8E9099),
   onInverseSurface: Color(0xFF1B1B1F),
@@ -188,9 +228,10 @@ const darkColorScheme = ColorScheme(
 );
 
 const searchMatchColor = Colors.yellow;
-final searchMatchColorOpaque = Colors.yellow.withOpacity(0.5);
+final searchMatchColorOpaque = Colors.yellow.withValues(alpha: 255 / 2);
 const activeSearchMatchColor = Colors.orangeAccent;
-final activeSearchMatchColorOpaque = Colors.orangeAccent.withOpacity(0.5);
+final activeSearchMatchColorOpaque =
+    Colors.orangeAccent.withValues(alpha: 255 / 2);
 
 /// Gets an alternating color to use for indexed UI elements.
 Color alternatingColorForIndex(int index, ColorScheme colorScheme) {
@@ -205,7 +246,7 @@ Color alternatingColorForIndex(int index, ColorScheme colorScheme) {
 /// A value of 0.5 would result in all colours being considered light/dark, and
 /// a value of 0.12 allowing around only the 12% darkest/lightest colours by
 /// Flutter's luminance calculation.
-/// 12% was chosen becaues VS Code's default light background color is #f3f3f3
+/// 12% was chosen because VS Code's default light background color is #f3f3f3
 /// which is a little under 11%.
 const _lightDarkLuminanceThreshold = 0.12;
 
@@ -225,50 +266,50 @@ bool isValidLightColor(Color? color) {
 
 // Size constants:
 double get defaultToolbarHeight => scaleByFontFactor(32.0);
-double defaultHeaderHeight({bool isDense = false}) =>
-    isDense ? scaleByFontFactor(34.0) : scaleByFontFactor(38.0);
-double get defaultButtonHeight => scaleByFontFactor(32.0);
-double get defaultSwitchHeight => scaleByFontFactor(26.0);
+double get defaultHeaderHeight => scaleByFontFactor(28.0);
+double get defaultButtonHeight => scaleByFontFactor(26.0);
+double get defaultRowHeight => scaleByFontFactor(24.0);
 double get defaultLinearProgressIndicatorHeight => scaleByFontFactor(4.0);
-double get buttonMinWidth => scaleByFontFactor(36.0);
+double get defaultLinearProgressIndicatorWidth => scaleByFontFactor(200.0);
+double get buttonMinWidth => scaleByFontFactor(26.0);
 
-const defaultIconSizeBeforeScaling = 16.0;
-const defaultActionsIconSizeBeforeScaling = 20.0;
+const defaultIconSizeBeforeScaling = 14.0;
+const defaultActionsIconSizeBeforeScaling = 18.0;
 double get defaultIconSize => scaleByFontFactor(defaultIconSizeBeforeScaling);
 double get actionsIconSize =>
     scaleByFontFactor(defaultActionsIconSizeBeforeScaling);
 double get tooltipIconSize => scaleByFontFactor(12.0);
 double get tableIconSize => scaleByFontFactor(12.0);
-double get defaultListItemHeight => scaleByFontFactor(28.0);
+double get defaultListItemHeight => scaleByFontFactor(24.0);
 double get defaultDialogWidth => scaleByFontFactor(700.0);
 
 const extraWideSearchFieldWidth = 600.0;
 const wideSearchFieldWidth = 400.0;
 const defaultSearchFieldWidth = 200.0;
 
-double get defaultTextFieldHeight => scaleByFontFactor(32.0);
+double get defaultTextFieldHeight => scaleByFontFactor(26.0);
 double get defaultTextFieldNumberWidth => scaleByFontFactor(100.0);
 
 // TODO(jacobr) define a more sophisticated formula for chart height.
 // The chart height does need to increase somewhat to leave room for the legend
 // and tick marks but does not need to scale linearly with the font factor.
-double get defaultChartHeight => scaleByFontFactor(120.0);
+double get defaultChartHeight => scaleByFontFactor(110.0);
 
 double get actionWidgetSize => scaleByFontFactor(48.0);
 
-double get statusLineHeight => scaleByFontFactor(24.0);
+double get statusLineHeight => scaleByFontFactor(20.0);
 
 double get inputDecorationElementHeight => scaleByFontFactor(20.0);
 
 // Padding / spacing constants:
-const largeSpacing = 32.0;
-const defaultSpacing = 16.0;
-const intermediateSpacing = 12.0;
+const extraLargeSpacing = 32.0;
+const largeSpacing = 16.0;
+const defaultSpacing = 12.0;
+const intermediateSpacing = 10.0;
 const denseSpacing = 8.0;
-const denseModeDenseSpacing = 2.0;
 
 const defaultTabBarPadding = 14.0;
-const tabBarSpacing = 14.0;
+const tabBarSpacing = 8.0;
 const denseRowSpacing = 6.0;
 
 const hoverCardBorderSize = 2.0;
@@ -291,9 +332,11 @@ double get mediumProgressSize => scaleByFontFactor(24.0);
 const defaultTabBarViewPhysics = NeverScrollableScrollPhysics();
 
 // Font size constants:
+double get largeFontSize => scaleByFontFactor(unscaledLargeFontSize);
+const unscaledLargeFontSize = 14.0;
 
 double get defaultFontSize => scaleByFontFactor(unscaledDefaultFontSize);
-const unscaledDefaultFontSize = 14.0;
+const unscaledDefaultFontSize = 12.0;
 
 double get smallFontSize => scaleByFontFactor(unscaledSmallFontSize);
 const unscaledSmallFontSize = 10.0;
@@ -317,11 +360,10 @@ extension DevToolsSharedColorScheme on ColorScheme {
   Color get _devtoolsLink =>
       isLight ? const Color(0xFF1976D2) : Colors.lightBlueAccent;
 
-  Color get alternatingBackgroundColor1 =>
-      isLight ? Colors.white : const Color(0xFF1B1B1F);
+  Color get alternatingBackgroundColor1 => surface;
 
   Color get alternatingBackgroundColor2 =>
-      isLight ? const Color(0xFFF2F0F4) : const Color(0xFF303033);
+      isLight ? surface.darken(0.06) : surface.brighten(0.06);
 
   Color get selectedRowBackgroundColor =>
       isLight ? const Color(0xFFC7C6CA) : const Color(0xFF5E5E62);
@@ -335,6 +377,12 @@ extension DevToolsSharedColorScheme on ColorScheme {
       isLight ? const Color(0xFF999999) : const Color(0xFF8A8A8A);
 
   Color get tooltipTextColor => isLight ? Colors.white : Colors.black;
+
+  Color get activeToggleButtonColor => primary.withValues(alpha: 0.3);
+
+  Color get semiTransparentOverlayColor => isLight
+      ? Colors.grey.shade200.withAlpha(200)
+      : Colors.grey.shade800.withAlpha(200);
 }
 
 /// Utility extension methods to the [ThemeData] class.
@@ -349,19 +397,26 @@ extension ThemeDataExtension on ThemeData {
         ),
       );
 
+  TextStyle regularTextStyleWithColor(Color? color, {Color? backgroundColor}) =>
+      regularTextStyle.copyWith(color: color, backgroundColor: backgroundColor);
+
+  TextStyle get _smallText =>
+      regularTextStyle.copyWith(fontSize: smallFontSize);
+
+  TextStyle get _largeText =>
+      regularTextStyle.copyWith(fontSize: largeFontSize);
+
+  TextStyle get errorTextStyle => regularTextStyleWithColor(colorScheme.error);
+
   TextStyle get boldTextStyle =>
       regularTextStyle.copyWith(fontWeight: FontWeight.bold);
 
-  TextStyle get subtleTextStyle => fixBlurryText(
-        TextStyle(
-          color: colorScheme.subtleTextColor,
-        ),
-      );
+  TextStyle get subtleTextStyle =>
+      regularTextStyle.copyWith(color: colorScheme.subtleTextColor);
 
   TextStyle get fixedFontStyle => fixBlurryText(
-        textTheme.bodyMedium!.copyWith(
+        regularTextStyle.copyWith(
           fontFamily: 'RobotoMono',
-          color: colorScheme.onSurface,
           // Slightly smaller for fixes font text since it will appear larger
           // to begin with.
           fontSize: defaultFontSize - 1,
@@ -537,7 +592,7 @@ ButtonStyle _generateButtonStyle({
 }) {
   if (!isScreenWiderThan(context, minScreenWidthForTextBeforeScaling)) {
     buttonStyle = buttonStyle.copyWith(
-      padding: MaterialStateProperty.resolveWith<EdgeInsets>((_) {
+      padding: WidgetStateProperty.resolveWith<EdgeInsets>((_) {
         return EdgeInsets.zero;
       }),
     );

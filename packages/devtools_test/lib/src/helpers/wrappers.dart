@@ -1,8 +1,11 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+
+// ignore_for_file: implementation_imports, invalid_use_of_visible_for_testing_member, fine for test only package.
 
 import 'package:devtools_app/devtools_app.dart';
+import 'package:devtools_app/src/shared/primitives/query_parameters.dart';
 import 'package:devtools_app_shared/ui.dart';
 import 'package:devtools_app_shared/utils.dart';
 import 'package:flutter/material.dart';
@@ -21,17 +24,15 @@ final _testNavigatorKey = GlobalKey<NavigatorState>();
 /// This includes a [MaterialApp] to provide context like [Theme.of], a
 /// [Material] to support elements like [TextField] that draw ink effects, and a
 /// [Directionality] to support [RenderFlex] widgets like [Row] and [Column].
-Widget wrap(Widget widget) {
+Widget wrap(Widget widget, {DevToolsQueryParams? queryParams}) {
+  setGlobal(GlobalKey<NavigatorState>, _testNavigatorKey);
   return MaterialApp.router(
     theme: themeFor(
       isDarkTheme: false,
       ideTheme: IdeTheme(),
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: lightColorScheme,
-      ),
+      theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
     ),
-    routerDelegate: DevToolsRouterDelegate(
+    routerDelegate: DevToolsRouterDelegate.test(
       (context, page, args, state) => MaterialPage(
         child: Material(
           child: Directionality(
@@ -45,9 +46,11 @@ Widget wrap(Widget widget) {
       ),
       _testNavigatorKey,
     ),
-    routeInformationParser:
-        // ignore: invalid_use_of_visible_for_testing_member, false positive.
-        DevToolsRouteInformationParser.test('http://test/uri'),
+    routeInformationParser: DevToolsRouteInformationParser.test(
+      DevToolsQueryParams({
+        'uri': 'http://test/uri',
+      }).withUpdates(queryParams?.params),
+    ),
   );
 }
 
@@ -61,10 +64,7 @@ Widget wrapSimple(Widget widget) {
     theme: themeFor(
       isDarkTheme: false,
       ideTheme: IdeTheme(),
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: lightColorScheme,
-      ),
+      theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
     ),
     home: Material(
       child: Directionality(
@@ -80,7 +80,7 @@ Widget wrapSimple(Widget widget) {
 
 Widget wrapWithControllers(
   Widget widget, {
-  InspectorController? inspector,
+  InspectorScreenController? inspector,
   LoggingController? logging,
   MemoryController? memory,
   PerformanceController? performance,
@@ -93,10 +93,11 @@ Widget wrapWithControllers(
   ReleaseNotesController? releaseNotes,
   VMDeveloperToolsController? vmDeveloperTools,
   bool includeRouter = true,
+  DevToolsQueryParams? queryParams,
 }) {
   final providers = [
     if (inspector != null)
-      Provider<InspectorController>.value(value: inspector),
+      Provider<InspectorScreenController>.value(value: inspector),
     if (logging != null) Provider<LoggingController>.value(value: logging),
     if (memory != null) Provider<MemoryController>.value(value: memory),
     if (performance != null)
@@ -115,12 +116,11 @@ Widget wrapWithControllers(
       Provider<VMDeveloperToolsController>.value(value: vmDeveloperTools),
   ];
   final child = wrapWithNotifications(
-    MultiProvider(
-      providers: providers,
-      child: widget,
-    ),
+    MultiProvider(providers: providers, child: widget),
   );
-  return includeRouter ? wrap(child) : wrapSimple(child);
+  return includeRouter
+      ? wrap(child, queryParams: queryParams)
+      : wrapSimple(child);
 }
 
 Widget wrapWithNotifications(Widget child) {
@@ -128,15 +128,10 @@ Widget wrapWithNotifications(Widget child) {
 }
 
 Widget wrapWithInspectorControllers(Widget widget) {
-  final inspectorController = InspectorController(
-    inspectorTree: InspectorTreeController(),
-    detailsTree: InspectorTreeController(),
-    treeType: FlutterTreeType.widget,
-  );
   return wrapWithControllers(
     widget,
     debugger: DebuggerController(),
-    inspector: inspectorController,
+    inspector: InspectorScreenController(),
   );
 }
 
@@ -149,8 +144,8 @@ void testWidgetsWithContext(
 }) {
   testWidgets(description, (WidgetTester widgetTester) async {
     // set up the context
-    final Map<Type, dynamic> oldValues = {};
-    for (Type type in context.keys) {
+    final oldValues = <Type, Object?>{};
+    for (final type in context.keys) {
       oldValues[type] = globals[type];
       setGlobal(type, context[type]);
     }
@@ -159,7 +154,7 @@ void testWidgetsWithContext(
       await callback(widgetTester);
     } finally {
       // restore previous global values
-      for (Type type in oldValues.keys) {
+      for (final type in oldValues.keys) {
         final oldGlobal = oldValues[type];
         if (oldGlobal != null) {
           setGlobal(type, oldGlobal);
@@ -179,15 +174,11 @@ void testWidgetsWithWindowSize(
   WidgetTesterCallback test, {
   bool skip = false,
 }) {
-  testWidgets(
-    name,
-    (WidgetTester tester) async {
-      await _setWindowSize(tester, windowSize);
-      await test(tester);
-      await _resetWindowSize(tester);
-    },
-    skip: skip,
-  );
+  testWidgets(name, (WidgetTester tester) async {
+    await _setWindowSize(tester, windowSize);
+    await test(tester);
+    await _resetWindowSize(tester);
+  }, skip: skip);
 }
 
 Future<void> _setWindowSize(WidgetTester tester, Size windowSize) async {

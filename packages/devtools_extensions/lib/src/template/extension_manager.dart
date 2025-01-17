@@ -1,10 +1,13 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 part of 'devtools_extension.dart';
 
 final _log = Logger('devtools_extensions/extension_manager');
+
+const _vmServiceQueryParameter = 'uri';
+const _dtdQueryParameter = 'dtdUri';
 
 class ExtensionManager {
   final _registeredEventHandlers =
@@ -42,7 +45,7 @@ class ExtensionManager {
   EventListener? _handleMessageListener;
 
   // ignore: unused_element, false positive due to part files
-  void _init({required bool connectToVmService}) {
+  Future<void> _init() async {
     window.addEventListener(
       'message',
       _handleMessageListener = _handleMessage.toJS,
@@ -53,20 +56,23 @@ class ExtensionManager {
     final themeValue = queryParams[ExtensionEventParameters.theme];
     _setThemeForValue(themeValue);
 
-    final vmServiceUri = queryParams['uri'];
-    if (connectToVmService) {
-      if (vmServiceUri == null) {
-        // Request the vm service uri for the connected app. DevTools will
-        // respond with a [DevToolsPluginEventType.connectedVmService] event
-        // containing the currently connected app's vm service URI.
-        postMessageToDevTools(
-          DevToolsExtensionEvent(
-            DevToolsExtensionEventType.vmServiceConnection,
-          ),
-        );
-      } else {
-        unawaited(_connectToVmService(vmServiceUri));
-      }
+    final dtdUri = queryParams[_dtdQueryParameter];
+    if (dtdUri != null) {
+      await _connectToDtd(dtdUri);
+    }
+
+    final vmServiceUri = queryParams[_vmServiceQueryParameter];
+    if (vmServiceUri == null && !_useSimulatedEnvironment) {
+      // Request the vm service uri for the connected app. DevTools will
+      // respond with a [DevToolsPluginEventType.connectedVmService] event
+      // containing the currently connected app's vm service URI.
+      postMessageToDevTools(
+        DevToolsExtensionEvent(
+          DevToolsExtensionEventType.vmServiceConnection,
+        ),
+      );
+    } else {
+      unawaited(_connectToVmService(vmServiceUri));
     }
   }
 
@@ -151,19 +157,24 @@ class ExtensionManager {
     // TODO(kenz): investigate. this is weird but `vmServiceUri` != null even
     // when the `toString()` representation is 'null'.
     if (vmServiceUri == null || vmServiceUri == 'null') {
-      if (serviceManager.hasConnection) {
+      if (serviceManager.connectedState.value.connected) {
         await serviceManager.manuallyDisconnect();
       }
-      if (loadQueryParams().containsKey('uri')) {
-        _updateQueryParameter('uri', null);
+      if (loadQueryParams().containsKey(_vmServiceQueryParameter)) {
+        updateQueryParameter(_vmServiceQueryParameter, null);
       }
       return;
     }
 
     try {
       final finishedCompleter = Completer<void>();
+      final normalizedUri = normalizeVmServiceUri(vmServiceUri);
+      if (normalizedUri == null) {
+        throw Exception('unable to normalize uri because it is not absolute');
+      }
+
       final vmService = await connect<VmService>(
-        uri: Uri.parse(vmServiceUri),
+        uri: normalizedUri,
         finishedCompleter: finishedCompleter,
         serviceFactory: VmService.defaultFactory,
       );
@@ -171,10 +182,40 @@ class ExtensionManager {
         vmService,
         onClosed: finishedCompleter.future,
       );
-      _updateQueryParameter('uri', serviceManager.service!.wsUri!);
+      updateQueryParameter(
+        _vmServiceQueryParameter,
+        serviceManager.serviceUri!,
+      );
     } catch (e) {
       final errorMessage =
           'Unable to connect extension to VM service at $vmServiceUri: $e';
+      showNotification('Error: $errorMessage');
+      _log.shout(errorMessage);
+    }
+  }
+
+  Future<void> _connectToDtd(String? dtdUri) async {
+    // TODO(kenz): investigate. this is weird but `dtdUri` != null even
+    // when the `toString()` representation is 'null'.
+    if (dtdUri == null || dtdUri == 'null') {
+      if (dtdManager.hasConnection) {
+        await dtdManager.disconnect();
+      }
+      if (loadQueryParams().containsKey(_dtdQueryParameter)) {
+        updateQueryParameter(_dtdQueryParameter, null);
+      }
+      return;
+    }
+
+    try {
+      await dtdManager.connect(Uri.parse(dtdUri));
+      updateQueryParameter(
+        _dtdQueryParameter,
+        dtdManager.uri.toString(),
+      );
+    } catch (e) {
+      final errorMessage =
+          'Unable to connect extension to the Dart Tooling Daemon at $dtdUri: $e';
       showNotification('Error: $errorMessage');
       _log.shout(errorMessage);
     }
@@ -187,7 +228,7 @@ class ExtensionManager {
     // Use a post frame callback so that we do not try to update this while a
     // build is in progress.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateQueryParameter(
+      updateQueryParameter(
         'theme',
         useDarkTheme
             ? ExtensionEventParameters.themeValueDark
@@ -254,19 +295,25 @@ class ExtensionManager {
     );
   }
 
-  void _updateQueryParameter(String key, String? value) {
-    final newQueryParams = Map.of(loadQueryParams());
-    if (value == null) {
-      newQueryParams.remove(key);
-    } else {
-      newQueryParams[key] = value;
-    }
-    final newUri = Uri.parse(window.location.toString())
-        .replace(queryParameters: newQueryParams);
-    window.history.replaceState(
-      window.history.state,
-      '',
-      newUri.toString(),
+  /// Copy [content] to clipboard from DevTools.
+  ///
+  /// [successMessage] is an optional message that DevTools will show as a
+  /// notification when [content] has been successfully copied to the clipboard.
+  /// Defaults to [CopyToClipboardExtensionEvent.defaultSuccessMessage].
+  ///
+  /// This method of copying text is preferred over calling `Clipboard.setData`
+  /// directly because DevTools contains additional logic for copying text from
+  /// within an IDE-embedded web view. This scenario will occur when a user is
+  /// using a DevTools extension from within their IDE.
+  void copyToClipboard(
+    String content, {
+    String successMessage = CopyToClipboardExtensionEvent.defaultSuccessMessage,
+  }) {
+    postMessageToDevTools(
+      CopyToClipboardExtensionEvent(
+        content: content,
+        successMessage: successMessage,
+      ),
     );
   }
 }

@@ -1,12 +1,12 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:vm_service/vm_service.dart';
 
-import '../memory/adapted_heap_data.dart';
+import '../memory/heap_object.dart';
 import '../memory/simple_items.dart';
-import '../vm_utils.dart';
+import '../utils/vm_utils.dart';
 import 'diagnostics_node.dart';
 
 /// True, if [ref] contains static or live information about references and thus
@@ -18,7 +18,9 @@ bool isRootForReferences(GenericInstanceRef? ref) {
   }
 
   if (ref.instanceRef?.length == 0 ||
-      isPrimitiveInstanceKind(ref.instanceRef?.kind)) return false;
+      isPrimitiveInstanceKind(ref.instanceRef?.kind)) {
+    return false;
+  }
 
   return ref.refNodeType.isRoot;
 }
@@ -44,7 +46,7 @@ class GenericInstanceRef {
 
   final Object? value;
 
-  final HeapObjectSelection? heapSelection;
+  final HeapObject? heapSelection;
 
   InstanceRef? get instanceRef =>
       value is InstanceRef ? value as InstanceRef? : null;
@@ -62,7 +64,7 @@ class ObjectReferences extends GenericInstanceRef {
     required this.refNodeType,
     required IsolateRef super.isolateRef,
     required super.value,
-    required HeapObjectSelection super.heapSelection,
+    required HeapObject super.heapSelection,
   }) {
     if (refNodeType.isLive) assert(value != null);
   }
@@ -70,18 +72,18 @@ class ObjectReferences extends GenericInstanceRef {
   ObjectReferences.copyWith(
     ObjectReferences ref, {
     RefNodeType? refNodeType,
-    HeapObjectSelection? heapSelection,
-  })  : refNodeType = refNodeType ?? ref.refNodeType,
-        super(
-          isolateRef: ref.isolateRef,
-          value: ref.value,
-          heapSelection: heapSelection ?? ref.heapSelection,
-        );
+    HeapObject? heapSelection,
+  }) : refNodeType = refNodeType ?? ref.refNodeType,
+       super(
+         isolateRef: ref.isolateRef,
+         value: ref.value,
+         heapSelection: heapSelection ?? ref.heapSelection,
+       );
 
   final RefNodeType refNodeType;
 
   @override
-  HeapObjectSelection get heapSelection => super.heapSelection!;
+  HeapObject get heapSelection => super.heapSelection!;
 
   @override
   IsolateRef get isolateRef => super.isolateRef!;
@@ -117,8 +119,7 @@ enum RefNodeType {
   liveInRefs(RefDirection.inbound),
 
   /// Subitem of [liveRefRoot] for outbound live references.
-  liveOutRefs(RefDirection.outbound),
-  ;
+  liveOutRefs(RefDirection.outbound);
 
   const RefNodeType([this.direction]);
 

@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -73,8 +73,9 @@ class IsolateStatisticsViewController extends DisposableController
     // given tag's scope in the VM. These raw counts are reported here and
     // need to be processed.
     final tagCounters = isolate.tagCounters;
-    final names = tagCounters['names'];
-    final List<int> counters = tagCounters['counters'].cast<int>();
+    if (tagCounters == null) return;
+    final names = tagCounters['names'] as List;
+    final counters = (tagCounters['counters'] as List).cast<int>();
     final percentages = <String, double>{};
     int totalTickCount = 0;
     for (int i = 0; i < counters.length; ++i) {

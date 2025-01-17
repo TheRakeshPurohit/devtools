@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:convert';
@@ -11,6 +11,24 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
+
+/// The tag to add to a test case to ensure it is run on each commit to the
+/// Flutter SDK.
+///
+/// Before adding this tag, first check if the test is included in one of the
+/// tested subdirectories defined by tool/ci/flutter_customer_tests/test.sh. If
+/// it is, there is no need to add the tag to the individual test case since the
+/// library containing the test case is already included.
+const includeForCustomerTestsTag = 'include-for-flutter-customer-tests';
+
+/// The tag to add to a test case to ensure it is not run on each commit to the
+/// Flutter SDK.
+///
+/// Before adding this tag, first check if the test is included in one of the
+/// tested subdirectories defined by tool/ci/flutter_customer_tests/test.sh. If
+/// it is not, there is no need to add this tag to the individual test case
+/// since the library containing the test case is already excluded.
+const skipForCustomerTestsTag = 'skip-for-flutter-customer-tests';
 
 const shortPumpDuration = Duration(seconds: 1);
 const safePumpDuration = Duration(seconds: 3);
@@ -94,9 +112,9 @@ void _mockFlutterAssets() {
   if (!Platform.environment.containsKey('UNIT_TEST_ASSETS')) {
     return;
   }
-  final String? assetFolderPath = Platform.environment['UNIT_TEST_ASSETS'];
+  final assetFolderPath = Platform.environment['UNIT_TEST_ASSETS'];
   assert(Platform.environment['APP_NAME'] != null);
-  final String prefix = 'packages/${Platform.environment['APP_NAME']}/';
+  final prefix = 'packages/${Platform.environment['APP_NAME']}/';
 
   /// Navigation related actions (pop, push, replace) broadcasts these actions via
   /// platform messages.
@@ -104,31 +122,28 @@ void _mockFlutterAssets() {
       .setMockMethodCallHandler(SystemChannels.navigation, null);
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMessageHandler(
-    'flutter/assets',
-    (ByteData? message) async {
-      assert(message != null);
-      String key = utf8.decode(message!.buffer.asUint8List());
-      File asset = File(path.join(assetFolderPath!, key));
+      .setMockMessageHandler('flutter/assets', (ByteData? message) async {
+        assert(message != null);
+        String key = utf8.decode(message!.buffer.asUint8List());
+        File asset = File(path.join(assetFolderPath!, key));
 
-      if (!asset.existsSync()) {
-        // For tests in package, it will load assets with its own package prefix.
-        // In this case, we do a best-effort look up.
-        if (!key.startsWith(prefix)) {
-          return null;
-        }
-
-        key = key.replaceFirst(prefix, '');
-        asset = File(path.join(assetFolderPath, key));
         if (!asset.existsSync()) {
-          return null;
-        }
-      }
+          // For tests in package, it will load assets with its own package prefix.
+          // In this case, we do a best-effort look up.
+          if (!key.startsWith(prefix)) {
+            return null;
+          }
 
-      final Uint8List encoded = Uint8List.fromList(asset.readAsBytesSync());
-      return Future<ByteData>.value(encoded.buffer.asByteData());
-    },
-  );
+          key = key.replaceFirst(prefix, '');
+          asset = File(path.join(assetFolderPath, key));
+          if (!asset.existsSync()) {
+            return null;
+          }
+        }
+
+        final encoded = Uint8List.fromList(asset.readAsBytesSync());
+        return Future<ByteData>.value(encoded.buffer.asByteData());
+      });
 }
 
 // TODO(https://github.com/flutter/devtools/issues/6215): remove this helper.
@@ -158,7 +173,6 @@ Future<void> loadFonts() async {
       'fonts/Roboto_Mono/RobotoMono-Bold.ttf',
     ],
     'Octicons': ['fonts/Octicons.ttf'],
-    // 'Codicon': ['packages/codicon/font/codicon.ttf']
   };
 
   final loadFontsFuture = fonts.entries.map((entry) async {
@@ -207,6 +221,22 @@ void verifyIsSearchMatchForTreeData<T extends TreeDataSearchStateMixin<T>>(
       },
     );
   }
+}
+
+/// Given a [finder], repeatedly pumps until found, or until there are no more
+/// retries.
+Future<Finder> retryUntilFound(
+  Finder finder, {
+  required WidgetTester tester,
+  int retries = 3,
+}) async {
+  if (retries == 0) return finder;
+
+  final found = tester.any(finder);
+  if (found) return finder;
+
+  await tester.pump(safePumpDuration);
+  return retryUntilFound(finder, tester: tester, retries: retries - 1);
 }
 
 void logStatus(String log) {

@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:flutter/material.dart';
 
@@ -105,7 +105,7 @@ class _MyGarbage {
       };
 
       map = {
-        for (var _ in Iterable.generate(_width))
+        for (final _ in Iterable<void>.generate(_width))
           createInstance(): createInstance(),
       };
 
@@ -128,9 +128,9 @@ class _MyGarbage {
 
   late final _MyGarbage? childClass;
   late final List<_MyGarbage>? childList;
-  final Map mapSimple = Map.fromIterable(Iterable.generate(_width));
-  final Map mapEmpty = {};
-  final Map mapOfNulls = {null: null};
+  final mapSimple = Map.fromIterable(Iterable.generate(_width));
+  final mapEmpty = <Object?>{};
+  final mapOfNulls = {null: null};
   final listOfInt = List.generate(300, (i) => i);
   late final Map<dynamic, _MyGarbage>? mapSimpleKey;
   late final Map<_MyGarbage, dynamic>? mapSimpleValue;

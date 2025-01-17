@@ -1,17 +1,17 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:string_scanner/string_scanner.dart';
 import 'package:vm_service/vm_service.dart';
 
-import '../../../shared/common_widgets.dart';
 import '../../../shared/primitives/utils.dart';
 import '../../../shared/table/table.dart';
 import '../../../shared/table/table_data.dart';
 import '../../../shared/ui/colors.dart';
+import '../../../shared/ui/common_widgets.dart';
 import '../vm_developer_common_widgets.dart';
 import '../vm_service_private_extensions.dart';
 import 'object_inspector_view_controller.dart';
@@ -26,11 +26,7 @@ abstract class _CodeColumnData<T> extends ColumnData<T> {
 }
 
 class _AddressColumn extends _CodeColumnData<Instruction> {
-  _AddressColumn()
-      : super(
-          'Address',
-          fixedWidthPx: 160,
-        );
+  _AddressColumn() : super('Address', fixedWidthPx: 160);
 
   @override
   int getValue(Instruction dataObject) {
@@ -45,11 +41,7 @@ class _AddressColumn extends _CodeColumnData<Instruction> {
 }
 
 class _AddressRangeColumn extends _CodeColumnData<InliningEntry> {
-  _AddressRangeColumn()
-      : super(
-          'Address Range',
-          fixedWidthPx: 300,
-        );
+  _AddressRangeColumn() : super('Address Range', fixedWidthPx: 300);
 
   @override
   String getValue(InliningEntry dataObject) {
@@ -79,9 +71,7 @@ class _FunctionsColumn extends _CodeColumnData<InliningEntry>
             object: function,
             onTap: controller.findAndSelectNodeForObject,
           ),
-          const SizedBox(
-            width: denseSpacing,
-          ),
+          const SizedBox(width: denseSpacing),
         ],
       ],
     );
@@ -162,11 +152,7 @@ class _ProfileRangeTicksColumn extends _CodeColumnData<InliningEntry> {
 
 class _InstructionColumn extends _CodeColumnData<Instruction>
     implements ColumnRenderer<Instruction> {
-  _InstructionColumn()
-      : super(
-          'Disassembly',
-          fixedWidthPx: 240,
-        );
+  _InstructionColumn() : super('Disassembly', fixedWidthPx: 240);
 
   @override
   Object? getValue(Instruction dataObject) {
@@ -184,10 +170,7 @@ class _InstructionColumn extends _CodeColumnData<Instruction>
     final theme = Theme.of(context);
     return Text.rich(
       style: theme.fixedFontStyle,
-      _highlightAssemblyCode(
-        context,
-        data.instruction,
-      ),
+      _highlightAssemblyCode(context, data.instruction),
     );
   }
 
@@ -202,18 +185,14 @@ class _InstructionColumn extends _CodeColumnData<Instruction>
   ) {
     return TextSpan(
       text: _getLastMatch(scanner),
-      style: TextStyle(
-        color: colorScheme.controlFlowSyntaxColor,
-      ),
+      style: TextStyle(color: colorScheme.controlFlowSyntaxColor),
     );
   }
 
   TextSpan _buildRegisterSpan(ColorScheme colorScheme, StringScanner scanner) {
     return TextSpan(
       text: _getLastMatch(scanner),
-      style: TextStyle(
-        color: colorScheme.variableSyntaxColor,
-      ),
+      style: TextStyle(color: colorScheme.variableSyntaxColor),
     );
   }
 
@@ -225,9 +204,7 @@ class _InstructionColumn extends _CodeColumnData<Instruction>
     final match = _getLastMatch(scanner);
     return TextSpan(
       text: isHex ? '0x${match.substring(2).toUpperCase()}' : match,
-      style: TextStyle(
-        color: colorScheme.numericConstantSyntaxColor,
-      ),
+      style: TextStyle(color: colorScheme.numericConstantSyntaxColor),
     );
   }
 
@@ -254,11 +231,7 @@ class _InstructionColumn extends _CodeColumnData<Instruction>
       } else if (scanner.scan(registerRegExp)) {
         spans.add(_buildRegisterSpan(colorScheme, scanner));
       } else {
-        spans.add(
-          TextSpan(
-            text: String.fromCharCode(scanner.readChar()),
-          ),
-        );
+        spans.add(TextSpan(text: String.fromCharCode(scanner.readChar())));
       }
     }
     return TextSpan(children: spans);
@@ -304,7 +277,7 @@ class VmCodeDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Split(
+    return SplitPane(
       initialFractions: const [0.4, 0.6],
       axis: Axis.vertical,
       children: [
@@ -350,10 +323,7 @@ class VmCodeDisplay extends StatelessWidget {
     CodeObject code,
   ) {
     return [
-      selectableTextBuilderMapEntry(
-        'Kind',
-        code.obj.kind,
-      ),
+      selectableTextBuilderMapEntry('Kind', code.obj.kind),
       serviceObjectLinkBuilderMapEntry(
         controller: controller,
         key: 'Function',
@@ -370,12 +340,11 @@ class VmCodeDisplay extends StatelessWidget {
 
 class InliningTable extends StatelessWidget {
   InliningTable({
-    Key? key,
+    super.key,
     required this.code,
     required this.controller,
     required this.ticks,
-  })  : inliningData = code.obj.inliningData,
-        super(key: key);
+  }) : inliningData = code.obj.inliningData;
 
   final CodeObject code;
   final InliningData inliningData;
@@ -425,27 +394,19 @@ class InliningTable extends StatelessWidget {
 
 class CodeTable extends StatelessWidget {
   CodeTable({
-    Key? key,
+    super.key,
     required this.code,
     required this.controller,
     required this.ticks,
-  }) : super(key: key);
+  });
 
   late final columns = <ColumnData<Instruction>>[
     _AddressColumn(),
     _InstructionColumn(),
     _DartObjectColumn(controller: controller),
     if (ticks != null) ...[
-      _ProfileTicksColumn(
-        'Total %',
-        ticks: code.ticksTable,
-        inclusive: true,
-      ),
-      _ProfileTicksColumn(
-        'Self %',
-        ticks: code.ticksTable,
-        inclusive: false,
-      ),
+      _ProfileTicksColumn('Total %', ticks: code.ticksTable, inclusive: true),
+      _ProfileTicksColumn('Self %', ticks: code.ticksTable, inclusive: false),
     ],
   ];
 
@@ -520,15 +481,12 @@ class CpuProfilerTicksTable {
 /// Tracks inclusive and exclusive CPU profiler ticks for a single
 /// [Instruction].
 class CodeTicks {
-  const CodeTicks({
-    required this.inclusiveTicks,
-    required this.exclusiveTicks,
-  });
+  const CodeTicks({required this.inclusiveTicks, required this.exclusiveTicks});
 
   CodeTicks operator +(CodeTicks other) => CodeTicks(
-        inclusiveTicks: inclusiveTicks + other.inclusiveTicks,
-        exclusiveTicks: exclusiveTicks + other.exclusiveTicks,
-      );
+    inclusiveTicks: inclusiveTicks + other.inclusiveTicks,
+    exclusiveTicks: exclusiveTicks + other.exclusiveTicks,
+  );
 
   final int exclusiveTicks;
   final int inclusiveTicks;

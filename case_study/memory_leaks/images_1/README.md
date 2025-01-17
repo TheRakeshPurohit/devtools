@@ -1,3 +1,8 @@
+<!--
+Copyright 2025 The Flutter Authors
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+-->
 # Download and render network images.
 
 A material design widget to view downloaded network images.
@@ -32,7 +37,7 @@ Press the Snapshot button to collect information about all objects in the Dart V
 
 <img src="readme_images/snapshot.png" />
 
-When complete a Heat Map will appear.  Turn off the Heat Map swtich:
+When complete a Heat Map will appear.  Turn off the Heat Map switch:
 
 <img src="readme_images/heatmap_off.png" />
 
@@ -44,7 +49,7 @@ Press the Analyze button to analyze the current Snapshot
 
 <img src="readme_images/analyze.png" />
 
-After the snashot analysis a child row inside of > Analysis will be added titled "Snapshot ..." with the timetime stamp of the snapshot e.g., "Snapshot Jun 09 12:23:44".
+After the snapshot analysis a child row inside of > Analysis will be added titled "Snapshot ..." with the timestamp of the snapshot e.g., "Snapshot Jun 09 12:23:44".
 
 <img src="readme_images/analysis_1.png" />
 
@@ -153,7 +158,3 @@ The parameters cacheWidth or cacheHeight indicates to the engine that the image 
 Read [[Image.network Documentation](https://api.flutter.dev/flutter/widgets/Image/Image.network.html)].
 
 <img src="readme_images/leak_app.png" height="600em" />
-
-## Getting Started
-
-For help getting started with Flutter, view online [documentation](http://flutter.io/).

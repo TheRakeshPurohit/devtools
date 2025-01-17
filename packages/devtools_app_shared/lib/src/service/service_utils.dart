@@ -1,7 +1,8 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
+import 'package:dds_service_extensions/dds_service_extensions.dart';
 import 'package:vm_service/vm_service.dart';
 
 extension VmServiceExtension on VmService {
@@ -46,6 +47,29 @@ extension VmServiceExtension on VmService {
   ) async {
     await forEachIsolateHelper(this, callback);
   }
+
+  /// Posts an event to jump to code.
+  ///
+  /// The event directs an IDE to move to the [line] and [column] in the
+  /// specified [fileUriString], which is expected to be a proper file URI (i.e.
+  /// starts with "file://"). The [source] should indicate the tool and/or
+  /// feature (i.e. in the format "someTool.someFeature") that is making the
+  /// jump to code request.
+  ///
+  /// If there are no IDEs listening for this event, then this will be a no-op.
+  Future<void> navigateToCode({
+    required String fileUriString,
+    required int line,
+    required int column,
+    required String source,
+  }) async {
+    await postEvent('ToolEvent', 'navigate', <String, Object>{
+      'fileUri': fileUriString,
+      'line': line,
+      'column': column,
+      'source': source,
+    });
+  }
 }
 
 Future<void> forEachIsolateHelper(
@@ -53,7 +77,7 @@ Future<void> forEachIsolateHelper(
   Future<void> Function(IsolateRef) callback,
 ) async {
   final vm = await vmService.getVM();
-  final futures = <Future>[];
+  final futures = <Future<void>>[];
   for (final isolate in vm.isolates ?? []) {
     futures.add(callback(isolate));
   }

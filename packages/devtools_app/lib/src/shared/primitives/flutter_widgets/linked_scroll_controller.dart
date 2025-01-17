@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -54,11 +54,14 @@ class LinkedScrollControllerGroup {
 
   /// Creates a new controller that is linked to any existing ones.
   ScrollController addAndGet() {
-    final initialScrollOffset = _attachedControllers.isEmpty
-        ? 0.0
-        : _attachedControllers.first.position.pixels;
-    final controller =
-        _LinkedScrollController(this, initialScrollOffset: initialScrollOffset);
+    final initialScrollOffset =
+        _attachedControllers.isEmpty
+            ? 0.0
+            : _attachedControllers.first.position.pixels;
+    final controller = _LinkedScrollController(
+      this,
+      initialScrollOffset: initialScrollOffset,
+    );
     _allControllers.add(controller);
     controller.addListener(_offsetNotifier.notifyListeners);
     return controller;
@@ -143,8 +146,8 @@ class _LinkedScrollControllerGroupOffsetNotifier extends ChangeNotifier {
 class _LinkedScrollController extends ScrollController {
   _LinkedScrollController(
     this._controllers, {
-    required double initialScrollOffset,
-  }) : super(initialScrollOffset: initialScrollOffset);
+    required super.initialScrollOffset,
+  });
 
   final LinkedScrollControllerGroup _controllers;
 
@@ -161,8 +164,7 @@ class _LinkedScrollController extends ScrollController {
       '_LinkedScrollControllers can only be used with'
       ' _LinkedScrollPositions.',
     );
-    final _LinkedScrollPosition linkedPosition =
-        position as _LinkedScrollPosition;
+    final linkedPosition = position as _LinkedScrollPosition;
     assert(
       linkedPosition.owner == this,
       '_LinkedScrollPosition cannot change controllers once created.',
@@ -203,7 +205,7 @@ class _LinkedScrollController extends ScrollController {
   Iterable<_LinkedScrollActivity> link(_LinkedScrollPosition driver) {
     assert(hasClients);
     final activities = <_LinkedScrollActivity>[];
-    for (ScrollPosition position in positions) {
+    for (final position in positions) {
       activities.add((position as _LinkedScrollPosition).link(driver));
     }
     return activities;
@@ -220,20 +222,15 @@ class _LinkedScrollController extends ScrollController {
 class _LinkedScrollPosition extends ScrollPositionWithSingleContext {
   _LinkedScrollPosition(
     this.owner, {
-    required ScrollPhysics physics,
-    required ScrollContext context,
-    double? initialPixels,
-    ScrollPosition? oldPosition,
-  }) : super(
-          physics: physics,
-          context: context,
-          initialPixels: initialPixels,
-          oldPosition: oldPosition,
-        );
+    required super.physics,
+    required super.context,
+    super.initialPixels = null,
+    super.oldPosition,
+  });
 
   final _LinkedScrollController owner;
 
-  final Set<_LinkedScrollActivity> _peerActivities = <_LinkedScrollActivity>{};
+  final _peerActivities = <_LinkedScrollActivity>{};
 
   // We override hold to propagate it to all peer controllers.
   @override
@@ -254,7 +251,7 @@ class _LinkedScrollPosition extends ScrollPositionWithSingleContext {
     if (newActivity == null) {
       return;
     }
-    for (var activity in _peerActivities) {
+    for (final activity in _peerActivities) {
       activity.unlink(this);
     }
 
@@ -276,7 +273,7 @@ class _LinkedScrollPosition extends ScrollPositionWithSingleContext {
 
     if (owner.canLinkWithPeers) {
       _peerActivities.addAll(owner.linkWithPeers(this));
-      for (var activity in _peerActivities) {
+      for (final activity in _peerActivities) {
         activity.moveTo(newPixels);
       }
     }
@@ -299,7 +296,7 @@ class _LinkedScrollPosition extends ScrollPositionWithSingleContext {
 
     if (owner.canLinkWithPeers) {
       _peerActivities.addAll(owner.linkWithPeers(this));
-      for (var activity in _peerActivities) {
+      for (final activity in _peerActivities) {
         activity.jumpTo(value);
       }
     }
@@ -315,8 +312,7 @@ class _LinkedScrollPosition extends ScrollPositionWithSingleContext {
     if (this.activity is! _LinkedScrollActivity) {
       beginActivity(_LinkedScrollActivity(this));
     }
-    final _LinkedScrollActivity activity =
-        this.activity as _LinkedScrollActivity;
+    final activity = this.activity as _LinkedScrollActivity;
     activity.link(driver);
     return activity;
   }
@@ -339,12 +335,12 @@ class _LinkedScrollPosition extends ScrollPositionWithSingleContext {
 }
 
 class _LinkedScrollActivity extends ScrollActivity {
-  _LinkedScrollActivity(_LinkedScrollPosition delegate) : super(delegate);
+  _LinkedScrollActivity(_LinkedScrollPosition super.delegate);
 
   @override
   _LinkedScrollPosition get delegate => super.delegate as _LinkedScrollPosition;
 
-  final Set<_LinkedScrollPosition> drivers = <_LinkedScrollPosition>{};
+  final drivers = <_LinkedScrollPosition>{};
 
   void link(_LinkedScrollPosition driver) {
     drivers.add(driver);
@@ -381,7 +377,7 @@ class _LinkedScrollActivity extends ScrollActivity {
   void _updateUserScrollDirection() {
     assert(drivers.isNotEmpty);
     ScrollDirection? commonDirection;
-    for (var driver in drivers) {
+    for (final driver in drivers) {
       commonDirection ??= driver.userScrollDirection;
       if (driver.userScrollDirection != commonDirection) {
         commonDirection = ScrollDirection.idle;
@@ -392,7 +388,7 @@ class _LinkedScrollActivity extends ScrollActivity {
 
   @override
   void dispose() {
-    for (var driver in drivers) {
+    for (final driver in drivers) {
       driver.unlink(this);
     }
     super.dispose();

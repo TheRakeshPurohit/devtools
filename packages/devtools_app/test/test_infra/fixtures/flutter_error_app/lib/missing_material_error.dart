@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -23,7 +23,7 @@ class MissingMaterialError extends StatelessWidget {
 
 /// Opens an [AlertDialog] showing what the user typed.
 class ExampleWidget extends StatefulWidget {
-  const ExampleWidget({Key? key}) : super(key: key);
+  const ExampleWidget({super.key});
 
   @override
   State<ExampleWidget> createState() => _ExampleWidgetState();
@@ -31,7 +31,7 @@ class ExampleWidget extends StatefulWidget {
 
 /// State for [ExampleWidget] widgets.
 class _ExampleWidgetState extends State<ExampleWidget> {
-  final TextEditingController _controller = TextEditingController();
+  final _controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 // ignore_for_file: invalid_use_of_protected_member
 import 'dart:async';
@@ -10,13 +10,13 @@ import 'package:devtools_shared/devtools_test_utils.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class AutoDisposeContoller extends DisposableController
+class AutoDisposeController extends DisposableController
     with AutoDisposeControllerMixin {}
 
 class AutoDisposedWidget extends StatefulWidget {
-  const AutoDisposedWidget(this.stream, {Key? key}) : super(key: key);
+  const AutoDisposedWidget(this.stream, {super.key});
 
-  final Stream stream;
+  final Stream<Object?> stream;
 
   @override
   State<AutoDisposedWidget> createState() => _AutoDisposedWidgetState();
@@ -45,17 +45,17 @@ void main() {
   group('Disposer', () {
     test('disposes streams', () {
       final disposer = Disposer();
-      final controller1 = StreamController(sync: true);
-      final controller2 = StreamController(sync: true);
+      final controller1 = StreamController<void>(sync: true);
+      final controller2 = StreamController<void>(sync: true);
       var c1Events = 0;
       var c2Events = 0;
       disposer.autoDisposeStreamSubscription(
-        controller1.stream.listen((data) {
+        controller1.stream.listen((_) {
           c1Events++;
         }),
       );
       disposer.autoDisposeStreamSubscription(
-        controller2.stream.listen((data) {
+        controller2.stream.listen((_) {
           c2Events++;
         }),
       );
@@ -201,7 +201,7 @@ void main() {
     });
 
     group('callOnceWhenReady', () {
-      for (bool isReady in [false, true]) {
+      for (final isReady in [false, true]) {
         group('isReady=$isReady', () {
           test('triggers callback and cancels listeners when ready ', () async {
             final disposer = Disposer();
@@ -324,7 +324,7 @@ void main() {
   testWidgets('Test stream auto dispose', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     final key = GlobalKey();
-    final controller = StreamController();
+    final controller = StreamController<void>();
     await tester.pumpWidget(AutoDisposedWidget(controller.stream, key: key));
 
     final state = key.currentState as _AutoDisposedWidgetState;
@@ -347,7 +347,7 @@ void main() {
   });
 
   test('Test Listenable auto dispose', () {
-    final controller = AutoDisposeContoller();
+    final controller = AutoDisposeController();
     final notifier = ValueNotifier<int>(42);
     final values = <int>[];
     controller.addAutoDisposeListener(notifier, () {

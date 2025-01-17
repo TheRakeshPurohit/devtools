@@ -1,39 +1,32 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:convert';
 
 /// The universal link related settings of a iOS build of a Flutter project.
-class UniversalLinkSettings {
-  const UniversalLinkSettings._(
-    this.bundleIdentifier,
-    this.teamIdentifier,
-    this.associatedDomains,
-  );
-
-  factory UniversalLinkSettings.fromJson(String json) {
-    final jsonObject = jsonDecode(json);
-    return UniversalLinkSettings._(
-      jsonObject[_kBundleIdentifierKey] as String? ?? '',
-      jsonObject[_kTeamIdentifierKey] as String? ?? '',
-      jsonObject[_kAssociatedDomainsKey].cast<String>() as List<String>,
-    );
-  }
+extension type const UniversalLinkSettings._(Map<String, Object?> _json) {
+  factory UniversalLinkSettings.fromJson(String json) =>
+      UniversalLinkSettings._(jsonDecode(json));
 
   static const _kBundleIdentifierKey = 'bundleIdentifier';
   static const _kTeamIdentifierKey = 'teamIdentifier';
   static const _kAssociatedDomainsKey = 'associatedDomains';
 
   /// Used when the the server can't retrieve universal link settings.
-  static const empty = UniversalLinkSettings._('', '', <String>[]);
+  static const empty = UniversalLinkSettings._({
+    _kBundleIdentifierKey: '',
+    _kTeamIdentifierKey: '',
+    _kAssociatedDomainsKey: [],
+  });
 
   /// The bundle identifier of the iOS build of this Flutter project.
-  final String bundleIdentifier;
+  String get bundleIdentifier => _json[_kBundleIdentifierKey] as String;
 
   /// The team identifier of the iOS build of this Flutter project.
-  final String teamIdentifier;
+  String get teamIdentifier => _json[_kTeamIdentifierKey] as String;
 
   /// The associated domains of the iOS build of this Flutter project.
-  final List<String> associatedDomains;
+  List<String> get associatedDomains =>
+      (_json[_kAssociatedDomainsKey] as List).cast<String>().toList();
 }

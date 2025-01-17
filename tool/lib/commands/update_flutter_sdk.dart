@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:io';
 
@@ -13,6 +13,8 @@ import '../utils.dart';
 
 const _updateOnPath = 'update-on-path';
 const _useCacheFlag = 'use-cache';
+
+final _flutterPreReleaseTagRegExp = RegExp(r'[0-9]+.[0-9]+.0-[0-9]+.0.pre');
 
 /// This command updates the the Flutter SDK contained in the 'tool/' directory
 /// to the latest Flutter candidate branch.
@@ -29,21 +31,23 @@ const _useCacheFlag = 'use-cache';
 /// time since the GitHub workflow that updates this file runs twice per day.
 ///
 /// To run this script:
-/// `devtools_tool update-flutter-sdk [--from-path] [--no-use-cache]`
+/// `dt update-flutter-sdk [--from-path] [--no-use-cache]`
 class UpdateFlutterSdkCommand extends Command {
   UpdateFlutterSdkCommand() {
     argParser
       ..addFlag(
         _updateOnPath,
         negatable: false,
-        help: 'Also update the Flutter SDK that is on PATH (your local '
+        help:
+            'Also update the Flutter SDK that is on PATH (your local '
             'flutter/flutter git checkout)',
       )
       ..addFlag(
         _useCacheFlag,
         negatable: true,
         defaultsTo: true,
-        help: 'Update the Flutter SDK(s) to the cached Flutter version stored '
+        help:
+            'Update the Flutter SDK(s) to the cached Flutter version stored '
             'in "flutter-candidate.txt" instead of the latest version at '
             '"https://flutter.googlesource.com/mirrors/flutter/"',
       );
@@ -59,8 +63,8 @@ class UpdateFlutterSdkCommand extends Command {
 
   @override
   Future run() async {
-    final updateOnPath = argResults![_updateOnPath];
-    final useCachedVersion = argResults![_useCacheFlag];
+    final updateOnPath = argResults![_updateOnPath] as bool;
+    final useCachedVersion = argResults![_useCacheFlag] as bool;
     final log = Logger.standard();
 
     // TODO(kenz): we can remove this if we can rewrite the
@@ -79,23 +83,28 @@ class UpdateFlutterSdkCommand extends Command {
     final repo = DevToolsRepo.getInstance();
     final processManager = ProcessManager();
 
-    late String flutterTag;
+    final String? flutterVersion;
+
     if (useCachedVersion) {
-      flutterTag =
-          'tags/${repo.readFile(Uri.parse('flutter-candidate.txt')).trim()}';
+      final versionStr =
+          repo.readFile(Uri.parse('flutter-candidate.txt')).trim();
+      // If the version string doesn't match the expected pattern for a
+      // pre-release tag, then assume it's a commit hash:
+      flutterVersion =
+          _flutterPreReleaseTagRegExp.hasMatch(versionStr)
+              ? 'tags/$versionStr'
+              : versionStr;
     } else {
-      flutterTag = (await processManager.runProcess(
-        CliCommand('sh latest_flutter_candidate.sh'),
-        workingDirectory: repo.toolDirectoryPath,
-      ))
-          .stdout
-          .replaceFirst('refs/', '')
-          .trim();
+      flutterVersion =
+          (await processManager.runProcess(
+            CliCommand('sh', ['latest_flutter_candidate.sh']),
+            workingDirectory: repo.toolDirectoryPath,
+          )).stdout.replaceFirst('refs/', '').trim();
     }
 
     log.stdout(
       'Updating to Flutter version '
-      '${useCachedVersion ? 'from cache' : 'from upstream'}: $flutterTag ',
+      '${useCachedVersion ? 'from cache' : 'from upstream'}: $flutterVersion',
     );
 
     final flutterSdkDirName = repo.sdkDirectoryName;
@@ -116,12 +125,12 @@ class UpdateFlutterSdkCommand extends Command {
 
       await processManager.runAll(
         commands: [
-          CliCommand.git(cmd: 'stash'),
-          CliCommand.git(cmd: 'fetch upstream'),
-          CliCommand.git(cmd: 'checkout upstream/master'),
-          CliCommand.git(cmd: 'reset --hard upstream/master'),
-          CliCommand.git(cmd: 'checkout $flutterTag -f'),
-          CliCommand.flutter('--version'),
+          CliCommand.git(['stash']),
+          CliCommand.git(['fetch', 'upstream']),
+          CliCommand.git(['checkout', 'upstream/master']),
+          CliCommand.git(['reset', '--hard', 'upstream/master']),
+          CliCommand.git(['checkout', flutterVersion, '-f']),
+          CliCommand.flutter(['--version']),
         ],
         workingDirectory: pathSdk.sdkPath,
       );
@@ -133,24 +142,26 @@ class UpdateFlutterSdkCommand extends Command {
       log.stdout('Updating Flutter at $toolSdkPath');
       await processManager.runAll(
         commands: [
-          CliCommand.git(cmd: 'fetch'),
-          CliCommand.git(cmd: 'checkout $flutterTag -f'),
-          CliCommand.flutter('--version'),
+          CliCommand.git(['fetch']),
+          CliCommand.git(['checkout', flutterVersion, '-f']),
+          CliCommand.flutter(['--version']),
         ],
         workingDirectory: toolSdkPath,
       );
     } else {
       log.stdout('Cloning Flutter into $toolSdkPath');
       await processManager.runProcess(
-        CliCommand.git(
-          cmd: 'clone https://github.com/flutter/flutter $flutterSdkDirName',
-        ),
+        CliCommand.git([
+          'clone',
+          'https://github.com/flutter/flutter',
+          flutterSdkDirName,
+        ]),
         workingDirectory: repo.toolDirectoryPath,
       );
       await processManager.runAll(
         commands: [
-          CliCommand.git(cmd: 'checkout $flutterTag -f'),
-          CliCommand.flutter('--version'),
+          CliCommand.git(['checkout', flutterVersion, '-f']),
+          CliCommand.flutter(['--version']),
         ],
         workingDirectory: toolSdkPath,
       );

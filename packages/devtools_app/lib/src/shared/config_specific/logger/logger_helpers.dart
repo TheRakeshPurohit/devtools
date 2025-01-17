@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:logging/logging.dart';
 
@@ -11,7 +11,7 @@ import 'logger.dart';
 /// Helper for setting the log level for the global [Logger].
 void setDevToolsLoggingLevel(Level level) {
   Logger.root.level = level;
-  Logger.root.warning("DevTool's log level changed to ${level.name}");
+  Logger.root.warning('DevTools log level changed to ${level.name}');
 }
 
 /// Helper for initializing the [Logger] record handler.

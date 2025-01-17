@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 Future<void> waitFor(
   Future<bool> Function() condition, {
@@ -8,7 +8,7 @@ Future<void> waitFor(
   String timeoutMessage = 'condition not satisfied',
   Duration delay = _shortDelay,
 }) async {
-  final DateTime end = DateTime.now().add(timeout);
+  final end = DateTime.now().add(timeout);
   while (!end.isBefore(DateTime.now())) {
     if (await condition()) {
       return;

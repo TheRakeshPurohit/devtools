@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app/devtools_app.dart';
 import 'package:vm_service/vm_service.dart';
@@ -72,42 +72,42 @@ final httpGetResponseBodyData = [
   125,
 ];
 
-final testSocket1 = WebSocket(SocketStatistic.parse(testSocket1Json)!, 0);
-final Map<String, dynamic> testSocket1Json = {
+final testSocket1 = Socket(SocketStatistic.parse(testSocket1Json)!, 0);
+final testSocket1Json = <String, Object?>{
   'id': '10000',
   'startTime': 1000000,
   'endTime': 2000000,
   'lastReadTime': 1800000,
   'lastWriteTime': 1850000,
-  'address': 'InternetAddress(\'2606:4700:3037::ac43:bd8f\', IPv6)',
+  'address': '[2606:4700:3037::ac43:bd8f]',
   'port': 443,
   'socketType': 'tcp',
   'readBytes': 10,
   'writeBytes': 15,
 };
 
-final testSocket2 = WebSocket(SocketStatistic.parse(testSocket2Json)!, 0);
-final Map<String, dynamic> testSocket2Json = {
+final testSocket2 = Socket(SocketStatistic.parse(testSocket2Json)!, 0);
+final testSocket2Json = <String, Object?>{
   'id': '11111',
   'startTime': 3000000,
   // This socket has no end time.
   'lastReadTime': 3500000,
   'lastWriteTime': 3600000,
-  'address': 'InternetAddress(\'2606:4700:3037::ac43:0000\', IPv6)',
+  'address': '[2606:4700:3037::ac43:0000]',
   'port': 80,
   'socketType': 'tcp',
   'readBytes': 20,
   'writeBytes': 25,
 };
 
-final testSocket3 = WebSocket(SocketStatistic.parse(testSocket3Json)!, 0);
-final Map<String, dynamic> testSocket3Json = {
+final testSocket3 = Socket(SocketStatistic.parse(testSocket3Json)!, 0);
+final testSocket3Json = <String, Object?>{
   'id': '10000',
   'startTime': 1000000,
   'endTime': 2000000,
   'lastReadTime': 1800000,
   'lastWriteTime': 1850000,
-  'address': 'InternetAddress(\'2606:4700:3037::ac43:bd8f\', IPv6)',
+  'address': '[2606:4700:3037::ac43:bd8f]',
   'port': 443,
   'socketType': 'tcp',
   'readBytes': 100,
@@ -116,25 +116,24 @@ final Map<String, dynamic> testSocket3Json = {
 
 final httpGetRequest = HttpProfileRequest.parse(httpGetJson)!;
 final httpGet = DartIOHttpRequestData(
-  0,
   httpGetRequest,
   requestFullDataFromVmService: false,
 );
-final Map<String, dynamic> httpGetJson = {
+final httpGetJson = <String, Object?>{
   'type': 'HttpProfileRequest',
   'id': '1',
   'isolateId': 'isolates/2013291945734727',
   'method': 'GET',
-  'uri': 'https://jsonplaceholder.typicode.com/albums/1',
+  'uri': 'https://jsonplaceholder.typicode.com/albums/1?userId=1&title=myalbum',
+  'events': [
+    {'timestamp': 6326808941, 'event': 'Connection established'},
+    {'timestamp': 6326808965, 'event': 'Request sent'},
+    {'timestamp': 6327090622, 'event': 'Waiting (TTFB)'},
+    {'timestamp': 6327091650, 'event': 'Content Download'},
+  ],
   'startTime': 6326279935,
   'endTime': 6326808974,
   'request': {
-    'events': [
-      {'timestamp': 6326808941, 'event': 'Connection established'},
-      {'timestamp': 6326808965, 'event': 'Request sent'},
-      {'timestamp': 6327090622, 'event': 'Waiting (TTFB)'},
-      {'timestamp': 6327091650, 'event': 'Content Download'},
-    ],
     'headers': {
       'content-length': ['0'],
     },
@@ -182,28 +181,25 @@ final Map<String, dynamic> httpGetJson = {
 
 final httpPostRequest = HttpProfileRequest.parse(httpPostJson)!;
 final httpPost = DartIOHttpRequestData(
-  0,
   httpPostRequest,
   requestFullDataFromVmService: false,
 );
-final Map<String, dynamic> httpPostJson = {
+final httpPostJson = <String, Object?>{
   'type': 'HttpProfileRequest',
   'id': '2',
   'isolateId': 'isolates/979700762893215',
   'method': 'POST',
   'uri': 'https://jsonplaceholder.typicode.com/posts',
+  'events': [
+    {'timestamp': 2400314657, 'event': 'Connection established'},
+    {'timestamp': 2400320066, 'event': 'Request sent'},
+    {'timestamp': 2400994822, 'event': 'Waiting (TTFB)'},
+    {'timestamp': 2401000729, 'event': 'Content Download'},
+  ],
   'startTime': 2399492629,
   'endTime': 2400321715,
   'request': {
-    'events': [
-      {'timestamp': 2400314657, 'event': 'Connection established'},
-      {'timestamp': 2400320066, 'event': 'Request sent'},
-      {'timestamp': 2400994822, 'event': 'Waiting (TTFB)'},
-      {'timestamp': 2401000729, 'event': 'Content Download'},
-    ],
-    'headers': {
-      'transfer-encoding': [],
-    },
+    'headers': {'transfer-encoding': []},
     'connectionInfo': {
       'localPort': 55972,
       'remoteAddress': '2606:4700:3033::ac43:bdd9',
@@ -259,28 +255,25 @@ final httpPostResponseBodyData = [
 
 final httpPutRequest = HttpProfileRequest.parse(httpPutJson)!;
 final httpPut = DartIOHttpRequestData(
-  0,
   httpPutRequest,
   requestFullDataFromVmService: false,
 );
-final Map<String, dynamic> httpPutJson = {
+final httpPutJson = <String, Object?>{
   'type': 'HttpProfileRequest',
   'id': '3',
   'isolateId': 'isolates/4447876918484683',
   'method': 'PUT',
   'uri': 'https://jsonplaceholder.typicode.com/posts/1',
+  'events': [
+    {'timestamp': 1205855316, 'event': 'Connection established'},
+    {'timestamp': 1205858323, 'event': 'Request sent'},
+    {'timestamp': 1206602445, 'event': 'Waiting (TTFB)'},
+    {'timestamp': 1206609213, 'event': 'Content Download'},
+  ],
   'startTime': 1205283313,
   'endTime': 1205859179,
   'request': {
-    'events': [
-      {'timestamp': 1205855316, 'event': 'Connection established'},
-      {'timestamp': 1205858323, 'event': 'Request sent'},
-      {'timestamp': 1206602445, 'event': 'Waiting (TTFB)'},
-      {'timestamp': 1206609213, 'event': 'Content Download'},
-    ],
-    'headers': {
-      'transfer-encoding': [],
-    },
+    'headers': {'transfer-encoding': []},
     'connectionInfo': {
       'localPort': 43684,
       'remoteAddress': '2606:4700:3033::ac43:bdd9',
@@ -338,28 +331,25 @@ final httpPutResponseBodyData = [
 
 final httpPatchRequest = HttpProfileRequest.parse(httpPatchJson)!;
 final httpPatch = DartIOHttpRequestData(
-  0,
   httpPatchRequest,
   requestFullDataFromVmService: false,
 );
-final Map<String, dynamic> httpPatchJson = {
+final httpPatchJson = <String, Object?>{
   'type': 'HttpProfileRequest',
   'id': '4',
   'isolateId': 'isolates/4447876918484683',
   'method': 'PATCH',
   'uri': 'https://jsonplaceholder.typicode.com/posts/1',
+  'events': [
+    {'timestamp': 1910722654, 'event': 'Connection established'},
+    {'timestamp': 1910722783, 'event': 'Request sent'},
+    {'timestamp': 1911415225, 'event': 'Waiting (TTFB)'},
+    {'timestamp': 1911421003, 'event': 'Content Download'},
+  ],
   'startTime': 1910177192,
   'endTime': 1910722856,
   'request': {
-    'events': [
-      {'timestamp': 1910722654, 'event': 'Connection established'},
-      {'timestamp': 1910722783, 'event': 'Request sent'},
-      {'timestamp': 1911415225, 'event': 'Waiting (TTFB)'},
-      {'timestamp': 1911421003, 'event': 'Content Download'},
-    ],
-    'headers': {
-      'transfer-encoding': [],
-    },
+    'headers': {'transfer-encoding': []},
     'connectionInfo': {
       'localPort': 43864,
       'remoteAddress': '2606:4700:3033::ac43:bdd9',
@@ -420,44 +410,42 @@ final httpPatchResponseBodyData = [
 
 final httpGetWithErrorRequest = HttpProfileRequest.parse(httpGetWithErrorJson)!;
 final httpGetWithError = DartIOHttpRequestData(
-  0,
   httpGetWithErrorRequest,
   requestFullDataFromVmService: false,
 );
-final Map<String, dynamic> httpGetWithErrorJson = {
+final httpGetWithErrorJson = <String, Object?>{
   'type': '@HttpProfileRequest',
   'id': '5',
   'isolateId': 'isolates/1939772779732043',
   'method': 'GET',
   'uri': 'https://www.examplez.com/1',
+  'events': [],
   'startTime': 5385227316,
   'endTime': 5387256813,
   'request': {
-    'events': [],
     'error': 'HandshakeException: Connection terminated during handshake',
   },
 };
 
 final httpWsHandshakeRequest = HttpProfileRequest.parse(httpWsHandshakeJson)!;
 final httpWsHandshake = DartIOHttpRequestData(
-  0,
   httpWsHandshakeRequest,
   requestFullDataFromVmService: false,
 );
-final Map<String, dynamic> httpWsHandshakeJson = {
+final httpWsHandshakeJson = <String, Object?>{
   'type': 'HttpProfileRequest',
   'id': '6',
   'isolateId': 'isolates/1350291957483171',
   'method': 'GET',
   'uri': 'http://localhost:8080',
+  'events': [
+    {'timestamp': 8140247076, 'event': 'Connection established'},
+    {'timestamp': 8140247156, 'event': 'Request sent'},
+    {'timestamp': 8140261573, 'event': 'Waiting (TTFB)'},
+  ],
   'startTime': 8140222102,
   'endTime': 8140247377,
   'request': {
-    'events': [
-      {'timestamp': 8140247076, 'event': 'Connection established'},
-      {'timestamp': 8140247156, 'event': 'Request sent'},
-      {'timestamp': 8140261573, 'event': 'Waiting (TTFB)'},
-    ],
     'headers': {
       'content-length': ['0'],
     },
@@ -504,21 +492,21 @@ final Map<String, dynamic> httpWsHandshakeJson = {
   'responseBody': [],
 };
 
-final Map<String, dynamic> httpGetPendingJson = {
+final httpGetPendingJson = <String, Object?>{
   'type': 'HttpProfileRequest',
   'id': '7',
   'isolateId': 'isolates/2013291945734727',
   'method': 'GET',
   'uri': 'https://jsonplaceholder.typicode.com/albums/10',
+  'events': [
+    {'timestamp': 6326808941, 'event': 'Connection established'},
+    {'timestamp': 6326808965, 'event': 'Request sent'},
+    {'timestamp': 6327090622, 'event': 'Waiting (TTFB)'},
+    {'timestamp': 6327091650, 'event': 'Content Download'},
+  ],
   'startTime': 6326279935,
   'endTime': 6326808974,
   'request': {
-    'events': [
-      {'timestamp': 6326808941, 'event': 'Connection established'},
-      {'timestamp': 6326808965, 'event': 'Request sent'},
-      {'timestamp': 6327090622, 'event': 'Waiting (TTFB)'},
-      {'timestamp': 6327091650, 'event': 'Content Download'},
-    ],
     'headers': {
       'content-length': ['0'],
     },

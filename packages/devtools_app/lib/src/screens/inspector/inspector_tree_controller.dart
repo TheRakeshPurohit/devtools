@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:collection';
@@ -16,19 +16,19 @@ import 'package:logging/logging.dart';
 import '../../shared/analytics/analytics.dart' as ga;
 import '../../shared/analytics/constants.dart' as gac;
 import '../../shared/analytics/metrics.dart';
-import '../../shared/collapsible_mixin.dart';
-import '../../shared/common_widgets.dart';
 import '../../shared/console/eval/inspector_tree.dart';
 import '../../shared/console/widgets/description.dart';
 import '../../shared/diagnostics/diagnostics_node.dart';
-import '../../shared/diagnostics_text_styles.dart';
-import '../../shared/error_badge_manager.dart';
 import '../../shared/globals.dart';
+import '../../shared/managers/error_badge_manager.dart';
+import '../../shared/primitives/collapsible_mixin.dart';
+import '../../shared/primitives/diagnostics_text_styles.dart';
 import '../../shared/primitives/utils.dart';
 import '../../shared/ui/colors.dart';
+import '../../shared/ui/common_widgets.dart';
 import '../../shared/ui/search.dart';
 import '../../shared/ui/utils.dart';
-import '../../shared/utils.dart';
+import '../../shared/utils/utils.dart';
 import 'inspector_breadcrumbs.dart';
 import 'inspector_controller.dart';
 
@@ -39,13 +39,13 @@ class _InspectorTreeRowWidget extends StatefulWidget {
   /// Constructs a [_InspectorTreeRowWidget] that presents a line in the
   /// Inspector tree.
   const _InspectorTreeRowWidget({
-    required Key key,
+    required super.key,
     required this.row,
     required this.inspectorTreeState,
     this.error,
     required this.scrollControllerX,
     required this.viewportWidth,
-  }) : super(key: key);
+  });
 
   final _InspectorTreeState inspectorTreeState;
 
@@ -68,7 +68,7 @@ class _InspectorTreeRowState extends State<_InspectorTreeRowWidget>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: rowHeight,
+      height: inspectorRowHeight,
       child: InspectorRowContent(
         row: widget.row,
         error: widget.error,
@@ -109,16 +109,17 @@ class InspectorTreeController extends DisposableController
       gac.inspector,
       gac.inspectorTreeControllerInitialized,
       nonInteraction: true,
-      screenMetricsProvider: () => InspectorScreenMetrics(
-        inspectorTreeControllerId: gaId,
-        rootSetCount: _rootSetCount,
-        rowCount: _root?.subtreeSize,
-      ),
+      screenMetricsProvider:
+          () => InspectorScreenMetrics.legacy(
+            inspectorTreeControllerId: gaId,
+            rootSetCount: _rootSetCount,
+            rowCount: _root?.subtreeSize,
+          ),
     );
   }
 
   /// Clients the controller notifies to trigger changes to the UI.
-  final Set<InspectorControllerClient> _clients = {};
+  final _clients = <InspectorControllerClient>{};
 
   /// Identifier used when sending Google Analytics about events in this
   /// [InspectorTreeController].
@@ -147,13 +148,13 @@ class InspectorTreeController extends DisposableController
   // Method defined to avoid a direct Flutter dependency.
   void setState(VoidCallback fn) {
     fn();
-    for (var client in _clients) {
+    for (final client in _clients) {
       client.onChanged();
     }
   }
 
   void requestFocus() {
-    for (var client in _clients) {
+    for (final client in _clients) {
       client.requestFocus();
     }
   }
@@ -170,11 +171,12 @@ class InspectorTreeController extends DisposableController
         gac.inspector,
         gac.inspectorTreeControllerRootChange,
         nonInteraction: true,
-        screenMetricsProvider: () => InspectorScreenMetrics(
-          inspectorTreeControllerId: gaId,
-          rootSetCount: ++_rootSetCount,
-          rowCount: _root?.subtreeSize,
-        ),
+        screenMetricsProvider:
+            () => InspectorScreenMetrics.legacy(
+              inspectorTreeControllerId: gaId,
+              rootSetCount: ++_rootSetCount,
+              rowCount: _root?.subtreeSize,
+            ),
       );
     });
   }
@@ -258,7 +260,7 @@ class InspectorTreeController extends DisposableController
   }
 
   double getRowOffset(int index) {
-    return (getCachedRow(index)?.depth ?? 0) * columnWidth;
+    return (getCachedRow(index)?.depth ?? 0) * inspectorColumnWidth;
   }
 
   List<InspectorTreeNode> getPathFromSelectedRowToRoot() {
@@ -339,22 +341,25 @@ class InspectorTreeController extends DisposableController
 
     final rootLocal = root!;
 
-    selection = rootLocal
-        .getRow(
-          (rootLocal.getRowIndex(selection!) + indexOffset)
-              .clamp(0, numRows - 1),
-        )
-        ?.node;
+    selection =
+        rootLocal
+            .getRow(
+              (rootLocal.getRowIndex(selection!) + indexOffset).clamp(
+                0,
+                numRows - 1,
+              ),
+            )
+            ?.node;
   }
 
   double get horizontalPadding => 10.0;
 
   double getDepthIndent(int depth) {
-    return (depth + 1) * columnWidth + horizontalPadding;
+    return (depth + 1) * inspectorColumnWidth + horizontalPadding;
   }
 
   double rowYTop(int index) {
-    return rowHeight * index;
+    return inspectorRowHeight * index;
   }
 
   void nodeChanged(InspectorTreeNode node) {
@@ -405,7 +410,7 @@ class InspectorTreeController extends DisposableController
 
   int get numRows => root?.subtreeSize ?? 0;
 
-  int getRowIndex(double y) => max(0, y ~/ rowHeight);
+  int getRowIndex(double y) => max(0, y ~/ inspectorRowHeight);
 
   InspectorTreeRow? getRowForNode(InspectorTreeNode node) {
     final rootLocal = root;
@@ -416,7 +421,7 @@ class InspectorTreeController extends DisposableController
   InspectorTreeRow? getRow(Offset offset) {
     final rootLocal = root;
     if (rootLocal == null) return null;
-    final int row = getRowIndex(offset.dy);
+    final row = getRowIndex(offset.dy);
     return row < rootLocal.subtreeSize ? getCachedRow(row) : null;
   }
 
@@ -445,6 +450,7 @@ class InspectorTreeController extends DisposableController
     ga.select(
       gac.inspector,
       gac.treeNodeSelection,
+      screenMetricsProvider: () => InspectorScreenMetrics.legacy(),
     );
     expandPath(node);
   }
@@ -463,12 +469,12 @@ class InspectorTreeController extends DisposableController
       getDepthIndent(row.depth),
       rowYTop(row.index),
       approximateNodeWidth,
-      rowHeight,
+      inspectorRowHeight,
     );
   }
 
   void scrollToRect(Rect targetRect) {
-    for (var client in _clients) {
+    for (final client in _clients) {
       client.scrollToRect(targetRect);
     }
   }
@@ -476,7 +482,7 @@ class InspectorTreeController extends DisposableController
   /// Width each row in the tree should have ignoring its indent.
   ///
   /// Content in rows should wrap if it exceeds this width.
-  final double rowWidth = 1200;
+  final rowWidth = 1200;
 
   /// Maximum indent of the tree in pixels.
   double? _maxIndent;
@@ -499,7 +505,7 @@ class InspectorTreeController extends DisposableController
   void animateToTargets(List<InspectorTreeNode> targets) {
     Rect? targetRect;
 
-    for (InspectorTreeNode target in targets) {
+    for (final target in targets) {
       final row = getRowForNode(target);
       if (row != null) {
         final rowRect = getBoundingBox(row);
@@ -550,8 +556,9 @@ class InspectorTreeController extends DisposableController
     if (diagnosticsNode.hasChildren ||
         diagnosticsNode.inlineProperties.isNotEmpty) {
       if (diagnosticsNode.childrenReady || !diagnosticsNode.hasChildren) {
-        final bool styleIsMultiline =
-            expandPropertiesByDefault(diagnosticsNode.style);
+        final styleIsMultiline = expandPropertiesByDefault(
+          diagnosticsNode.style,
+        );
         setupChildren(
           diagnosticsNode,
           node,
@@ -582,7 +589,7 @@ class InspectorTreeController extends DisposableController
     }
     final inlineProperties = parent.inlineProperties;
 
-    for (RemoteDiagnosticsNode property in inlineProperties) {
+    for (final property in inlineProperties) {
       appendChild(
         treeNode,
         setupInspectorTreeNode(
@@ -596,7 +603,7 @@ class InspectorTreeController extends DisposableController
       );
     }
     if (children != null) {
-      for (RemoteDiagnosticsNode child in children) {
+      for (final child in children) {
         appendChild(
           treeNode,
           setupInspectorTreeNode(
@@ -611,7 +618,7 @@ class InspectorTreeController extends DisposableController
   }
 
   Future<void> maybePopulateChildren(InspectorTreeNode treeNode) async {
-    final RemoteDiagnosticsNode? diagnostic = treeNode.diagnostic;
+    final diagnostic = treeNode.diagnostic;
     if (diagnostic != null &&
         diagnostic.hasChildren &&
         (treeNode.hasPlaceholderChildren || treeNode.children.isEmpty)) {
@@ -653,10 +660,11 @@ class InspectorTreeController extends DisposableController
     final matches = <InspectorTreeRow>[];
 
     if (searchPreviousMatches) {
-      final List<InspectorTreeRow> previousMatches = searchMatches.value;
+      final previousMatches = searchMatches.value;
       for (final previousMatch in previousMatches) {
-        if (previousMatch.node.diagnostic!.searchValue
-            .caseInsensitiveContains(search)) {
+        if (previousMatch.node.diagnostic!.searchValue.caseInsensitiveContains(
+          search,
+        )) {
           matches.add(previousMatch);
         }
       }
@@ -671,21 +679,17 @@ class InspectorTreeController extends DisposableController
     if (search.isEmpty ||
         inspectorService == null ||
         inspectorService.isDisposed) {
-      assert(
-        () {
-          debugPrint('Search completed, no search');
-          return true;
-        }(),
-      );
+      assert(() {
+        debugPrint('Search completed, no search');
+        return true;
+      }());
       return matches;
     }
 
-    assert(
-      () {
-        debugPrint('Search started: $_searchTarget');
-        return true;
-      }(),
-    );
+    assert(() {
+      debugPrint('Search started: $_searchTarget');
+      return true;
+    }());
 
     for (final row in _searchableCachedRows) {
       final diagnostic = row!.node.diagnostic;
@@ -702,14 +706,12 @@ class InspectorTreeController extends DisposableController
       // Widget search end
     }
 
-    assert(
-      () {
-        debugPrint(
-          'Search completed with $debugStatsWidgets widgets, $debugStatsSearchOps ops',
-        );
-        return true;
-      }(),
-    );
+    assert(() {
+      debugPrint(
+        'Search completed with $debugStatsWidgets widgets, $debugStatsSearchOps ops',
+      );
+      return true;
+    }());
 
     return matches;
   }
@@ -735,14 +737,16 @@ abstract class InspectorControllerClient {
 
 class InspectorTree extends StatefulWidget {
   const InspectorTree({
-    Key? key,
+    super.key,
+    required this.controller,
     required this.treeController,
     this.summaryTreeController,
     this.isSummaryTree = false,
     this.widgetErrors,
     this.screenId,
-  })  : assert(isSummaryTree == (summaryTreeController == null)),
-        super(key: key);
+  }) : assert(isSummaryTree == (summaryTreeController == null));
+
+  final InspectorController controller;
 
   final InspectorTreeController? treeController;
 
@@ -766,9 +770,9 @@ class _InspectorTreeState extends State<InspectorTree>
     with
         SingleTickerProviderStateMixin,
         AutomaticKeepAliveClientMixin<InspectorTree>,
-        AutoDisposeMixin,
-        ProvidedControllerMixin<InspectorController, InspectorTree>
+        AutoDisposeMixin
     implements InspectorControllerClient {
+  InspectorController get controller => widget.controller;
   InspectorTreeController? get treeController => widget.treeController;
 
   late ScrollController _scrollControllerY;
@@ -780,7 +784,7 @@ class _InspectorTreeState extends State<InspectorTree>
   late FocusNode _focusNode;
 
   /// When autoscrolling, the number of rows to pad the target location with.
-  static const int _scrollPadCount = 3;
+  static const _scrollPadCount = 3;
 
   @override
   void initState() {
@@ -806,14 +810,8 @@ class _InspectorTreeState extends State<InspectorTree>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    initController();
-  }
-
-  @override
   void didUpdateWidget(InspectorTree oldWidget) {
-    final InspectorTreeController? oldTreeController = oldWidget.treeController;
+    final oldTreeController = oldWidget.treeController;
     if (oldTreeController != widget.treeController) {
       oldTreeController?.removeClient(this);
 
@@ -841,21 +839,21 @@ class _InspectorTreeState extends State<InspectorTree>
   }
 
   // TODO(devoncarew): Commented out as per flutter/devtools/pull/2001.
-//  void _onScrollYChange() {
-//    if (controller == null) return;
-//
-//    // If the vertical position  is already being animated we should not trigger
-//    // a new animation of the horizontal position as a more direct animation of
-//    // the horizontal position has already been triggered.
-//    if (currentAnimateY != null) return;
-//
-//    final x = _computeTargetX(_scrollControllerY.offset);
-//    _scrollControllerX.animateTo(
-//      x,
-//      duration: defaultDuration,
-//      curve: defaultCurve,
-//    );
-//  }
+  //  void _onScrollYChange() {
+  //    if (controller == null) return;
+  //
+  //    // If the vertical position  is already being animated we should not trigger
+  //    // a new animation of the horizontal position as a more direct animation of
+  //    // the horizontal position has already been triggered.
+  //    if (currentAnimateY != null) return;
+  //
+  //    final x = _computeTargetX(_scrollControllerY.offset);
+  //    _scrollControllerX.animateTo(
+  //      x,
+  //      duration: defaultDuration,
+  //      curve: defaultCurve,
+  //    );
+  //  }
 
   @override
   Future<void> scrollToRect(Rect rect) async {
@@ -866,12 +864,14 @@ class _InspectorTreeState extends State<InspectorTree>
 
     final initialX = rect.left;
     final initialY = rect.top;
-    final yOffsetAtViewportTop = _scrollControllerY.hasClients
-        ? _scrollControllerY.offset
-        : _scrollControllerY.initialScrollOffset;
-    final xOffsetAtViewportLeft = _scrollControllerX.hasClients
-        ? _scrollControllerX.offset
-        : _scrollControllerX.initialScrollOffset;
+    final yOffsetAtViewportTop =
+        _scrollControllerY.hasClients
+            ? _scrollControllerY.offset
+            : _scrollControllerY.initialScrollOffset;
+    final xOffsetAtViewportLeft =
+        _scrollControllerX.hasClients
+            ? _scrollControllerX.offset
+            : _scrollControllerX.initialScrollOffset;
 
     final viewPortInScrollControllerSpace = Rect.fromLTWH(
       xOffsetAtViewportLeft,
@@ -882,7 +882,7 @@ class _InspectorTreeState extends State<InspectorTree>
 
     final isRectInViewPort =
         viewPortInScrollControllerSpace.contains(rect.topLeft) &&
-            viewPortInScrollControllerSpace.contains(rect.bottomRight);
+        viewPortInScrollControllerSpace.contains(rect.bottomRight);
     if (isRectInViewPort) {
       // The rect is already in view, don't scroll
       return;
@@ -947,15 +947,13 @@ class _InspectorTreeState extends State<InspectorTree>
     required double initialX,
     int padCount = _scrollPadCount,
   }) {
-    return initialX - columnWidth * padCount;
+    return initialX - inspectorColumnWidth * padCount;
   }
 
   /// Pad [initialY] so that a row would be placed in the vertical center of
   /// the screen.
-  double _padTargetY({
-    required double initialY,
-  }) {
-    return initialY - (safeViewportHeight / 2) + rowHeight / 2;
+  double _padTargetY({required double initialY}) {
+    return initialY - (safeViewportHeight / 2) + inspectorRowHeight / 2;
   }
 
   /// Handle arrow keys for the InspectorTree. Ignore other key events so that
@@ -1008,7 +1006,14 @@ class _InspectorTreeState extends State<InspectorTree>
     if (!controller.firstInspectorTreeLoadCompleted && widget.isSummaryTree) {
       final screenId = widget.screenId;
       if (screenId != null) {
-        ga.timeEnd(screenId, gac.pageReady);
+        ga.timeEnd(
+          screenId,
+          gac.pageReady,
+          screenMetricsProvider:
+              () => InspectorScreenMetrics.legacy(
+                rowCount: treeControllerLocal.numRows,
+              ),
+        );
         unawaited(
           serviceConnection.sendDwdsEvent(
             screen: screenId,
@@ -1021,7 +1026,7 @@ class _InspectorTreeState extends State<InspectorTree>
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportWidth = constraints.maxWidth;
-        final Widget tree = Scrollbar(
+        final tree = Scrollbar(
           thumbVisibility: true,
           controller: _scrollControllerX,
           child: SingleChildScrollView(
@@ -1029,7 +1034,8 @@ class _InspectorTreeState extends State<InspectorTree>
             controller: _scrollControllerX,
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: treeControllerLocal.rowWidth +
+                maxWidth:
+                    treeControllerLocal.rowWidth +
                     treeControllerLocal.maxRowIndent,
               ),
               // TODO(kenz): this scrollbar needs to be sticky to the right side of
@@ -1049,29 +1055,29 @@ class _InspectorTreeState extends State<InspectorTree>
                     offsetController: _scrollControllerX,
                     offsetControllerViewportDimension: viewportWidth,
                     child: ListView.custom(
-                      itemExtent: rowHeight,
-                      childrenDelegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          if (index == treeControllerLocal.numRows) {
-                            return SizedBox(height: rowHeight);
-                          }
-                          final InspectorTreeRow row =
-                              treeControllerLocal.getCachedRow(index)!;
-                          final inspectorRef = row.node.diagnostic?.valueRef.id;
-                          return _InspectorTreeRowWidget(
-                            key: PageStorageKey(row.node),
-                            inspectorTreeState: this,
-                            row: row,
-                            scrollControllerX: _scrollControllerX,
-                            viewportWidth: viewportWidth,
-                            error: widget.widgetErrors != null &&
-                                    inspectorRef != null
-                                ? widget.widgetErrors![inspectorRef]
-                                : null,
-                          );
-                        },
-                        childCount: treeControllerLocal.numRows + 1,
-                      ),
+                      itemExtent: inspectorRowHeight,
+                      childrenDelegate: SliverChildBuilderDelegate((
+                        context,
+                        index,
+                      ) {
+                        if (index == treeControllerLocal.numRows) {
+                          return SizedBox(height: inspectorRowHeight);
+                        }
+                        final row = treeControllerLocal.getCachedRow(index)!;
+                        final inspectorRef = row.node.diagnostic?.valueRef.id;
+                        return _InspectorTreeRowWidget(
+                          key: PageStorageKey(row.node),
+                          inspectorTreeState: this,
+                          row: row,
+                          scrollControllerX: _scrollControllerX,
+                          viewportWidth: viewportWidth,
+                          error:
+                              widget.widgetErrors != null &&
+                                      inspectorRef != null
+                                  ? widget.widgetErrors![inspectorRef]
+                                  : null,
+                        );
+                      }, childCount: treeControllerLocal.numRows + 1),
                       controller: _scrollControllerY,
                     ),
                   ),
@@ -1081,7 +1087,7 @@ class _InspectorTreeState extends State<InspectorTree>
           ),
         );
 
-        final bool shouldShowBreadcrumbs = !widget.isSummaryTree;
+        final shouldShowBreadcrumbs = !widget.isSummaryTree;
         if (shouldShowBreadcrumbs) {
           final inspectorTreeController = widget.summaryTreeController!;
 
@@ -1107,9 +1113,10 @@ class _InspectorTreeState extends State<InspectorTree>
   bool get wantKeepAlive => true;
 }
 
-Paint _defaultPaint(ColorScheme colorScheme) => Paint()
-  ..color = colorScheme.treeGuidelineColor
-  ..strokeWidth = chartLineStrokeWidth;
+Paint _defaultPaint(ColorScheme colorScheme) =>
+    Paint()
+      ..color = colorScheme.treeGuidelineColor
+      ..strokeWidth = chartLineStrokeWidth;
 
 /// Custom painter that draws lines indicating how parent and child rows are
 /// connected to each other.
@@ -1132,31 +1139,36 @@ class _RowPainter extends CustomPainter {
     double currentX = 0;
     final paint = _defaultPaint(colorScheme);
 
-    final InspectorTreeNode node = row.node;
-    final bool showExpandCollapse = node.showExpandCollapse;
-    for (int tick in row.ticks) {
-      currentX = _controller.getDepthIndent(tick) - columnWidth * 0.5;
+    final node = row.node;
+    final showExpandCollapse = node.showExpandCollapse;
+    for (final tick in row.ticks) {
+      currentX = _controller.getDepthIndent(tick) - inspectorColumnWidth * 0.5;
       // Draw a vertical line for each tick identifying a connection between
       // an ancestor of this node and some other node in the tree.
       canvas.drawLine(
         Offset(currentX, 0.0),
-        Offset(currentX, rowHeight),
+        Offset(currentX, inspectorRowHeight),
         paint,
       );
     }
     // If this row is itself connected to a parent then draw the L shaped line
     // to make that connection.
     if (row.lineToParent) {
-      currentX = _controller.getDepthIndent(row.depth - 1) - columnWidth * 0.5;
-      final double width = showExpandCollapse ? columnWidth * 0.5 : columnWidth;
+      currentX =
+          _controller.getDepthIndent(row.depth - 1) -
+          inspectorColumnWidth * 0.5;
+      final width =
+          showExpandCollapse
+              ? inspectorColumnWidth * 0.5
+              : inspectorColumnWidth;
       canvas.drawLine(
         Offset(currentX, 0.0),
-        Offset(currentX, rowHeight * 0.5),
+        Offset(currentX, inspectorRowHeight * 0.5),
         paint,
       );
       canvas.drawLine(
-        Offset(currentX, rowHeight * 0.5),
-        Offset(currentX + width, rowHeight * 0.5),
+        Offset(currentX, inspectorRowHeight * 0.5),
+        Offset(currentX + width, inspectorRowHeight * 0.5),
         paint,
       );
     }
@@ -1210,15 +1222,17 @@ class InspectorRowContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double currentX = controller.getDepthIndent(row.depth) - columnWidth;
+    final currentX =
+        controller.getDepthIndent(row.depth) - inspectorColumnWidth;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     Color? backgroundColor;
     if (row.isSelected) {
-      backgroundColor = hasError
-          ? colorScheme.errorContainer
-          : colorScheme.selectedRowBackgroundColor;
+      backgroundColor =
+          hasError
+              ? colorScheme.errorContainer
+              : colorScheme.selectedRowBackgroundColor;
     }
 
     final node = row.node;
@@ -1235,19 +1249,16 @@ class InspectorRowContent extends StatelessWidget {
               children: [
                 node.showExpandCollapse
                     ? InkWell(
-                        onTap: onToggle,
-                        child: RotationTransition(
-                          turns: expandArrowAnimation,
-                          child: Icon(
-                            Icons.expand_more,
-                            size: defaultIconSize,
-                          ),
-                        ),
-                      )
-                    : const SizedBox(
-                        width: defaultSpacing,
-                        height: defaultSpacing,
+                      onTap: onToggle,
+                      child: RotationTransition(
+                        turns: expandArrowAnimation,
+                        child: Icon(Icons.expand_more, size: defaultIconSize),
                       ),
+                    )
+                    : const SizedBox(
+                      width: defaultSpacing,
+                      height: defaultSpacing,
+                    ),
                 Expanded(
                   child: Container(
                     color: backgroundColor,
@@ -1260,7 +1271,7 @@ class InspectorRowContent extends StatelessWidget {
                         controller.requestFocus();
                       },
                       child: SizedBox(
-                        height: rowHeight,
+                        height: inspectorRowHeight,
                         child: DiagnosticsNodeDescription(
                           node.diagnostic,
                           isSelected: row.isSelected,
@@ -1269,11 +1280,11 @@ class InspectorRowContent extends StatelessWidget {
                           nodeDescriptionHighlightStyle:
                               searchValue.isEmpty || !row.isSearchMatch
                                   ? DiagnosticsTextStyles.regular(
-                                      Theme.of(context).colorScheme,
-                                    )
+                                    Theme.of(context).colorScheme,
+                                  )
                                   : row.isSelected
-                                      ? theme.searchMatchHighlightStyleFocused
-                                      : theme.searchMatchHighlightStyle,
+                                  ? theme.searchMatchHighlightStyleFocused
+                                  : theme.searchMatchHighlightStyle,
                         ),
                       ),
                     ),
@@ -1288,13 +1299,15 @@ class InspectorRowContent extends StatelessWidget {
 
     // Wrap with tooltip if there is an error for this node's widget.
     if (hasError) {
-      rowWidget =
-          DevToolsTooltip(message: error!.errorMessage, child: rowWidget);
+      rowWidget = DevToolsTooltip(
+        message: error!.errorMessage,
+        child: rowWidget,
+      );
     }
 
     return CustomPaint(
       painter: _RowPainter(row, controller, colorScheme),
-      size: Size(currentX, rowHeight),
+      size: Size(currentX, inspectorRowHeight),
       child: Align(
         alignment: Alignment.topLeft,
         child: AnimatedBuilder(

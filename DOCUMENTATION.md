@@ -1,7 +1,13 @@
+<!--
+Copyright 2025 The Flutter Authors
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
+-->
 ## DevTools Documentation - How To Guide
-The documentation for Dart & Flutter DevTools lives on [flutter.dev](https://docs.flutter.dev/development/tools/devtools/overview).
 
-Our docs are written and pushed up to the [flutter/website](https://docs.flutter.dev/development/tools/devtools/overview)
+The documentation for Dart & Flutter DevTools lives on [flutter.dev](https://docs.flutter.dev/tools/devtools).
+
+Our docs are written and pushed up to the [flutter/website](https://docs.flutter.dev/tools/devtools)
 repo by the Flutter DevRel team. Developers working on DevTools should collaborate with Flutter tech writers by following
 the below workflow.
 

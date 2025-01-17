@@ -1,37 +1,37 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/analytics/analytics.dart' as ga;
 import '../../../../shared/analytics/constants.dart' as gac;
-import '../../../../shared/common_widgets.dart';
-import '../../../../shared/globals.dart';
 import '../../../../shared/primitives/utils.dart';
 import '../../../../shared/table/table.dart';
 import '../../../../shared/table/table_controller.dart';
 import '../../../../shared/table/table_data.dart';
+import '../../../../shared/ui/common_widgets.dart';
 import '../../shared/widgets/shared_memory_widgets.dart';
+import 'tracing_data.dart';
 import 'tracing_pane_controller.dart';
 
 /// The default width for columns containing *mostly* numeric data (e.g.,
 /// instances, memory).
-const _defaultNumberFieldWidth = 80.0;
+const _defaultNumberFieldWidth = 70.0;
 
 class _TraceCheckBoxColumn extends ColumnData<TracedClass>
     implements ColumnRenderer<TracedClass> {
   _TraceCheckBoxColumn({required this.controller})
-      : super(
-          'Trace',
-          titleTooltip:
-              'Enable or disable allocation tracing for a specific type',
-          fixedWidthPx: scaleByFontFactor(55.0),
-          alignment: ColumnAlignment.left,
-        );
+    : super(
+        'Trace',
+        titleTooltip:
+            'Enable or disable allocation tracing for a specific type',
+        fixedWidthPx: scaleByFontFactor(40.0),
+        alignment: ColumnAlignment.left,
+      );
 
-  final TracingPaneController controller;
+  final TracePaneController controller;
 
   @override
   bool get supportsSorting => false;
@@ -49,9 +49,9 @@ class _TraceCheckBoxColumn extends ColumnData<TracedClass>
       onChanged: (value) async {
         ga.select(
           gac.memory,
-          '${gac.MemoryEvent.tracingTraceCheck}-$value',
+          '${gac.MemoryEvents.tracingTraceCheck.name}-$value',
         );
-        await controller.setAllocationTracingForClass(item.cls, value!);
+        await controller.setAllocationTracingForClass(item.clazz, value!);
       },
     );
   }
@@ -69,17 +69,16 @@ class _TraceCheckBoxColumn extends ColumnData<TracedClass>
 
 class _ClassNameColumn extends ColumnData<TracedClass>
     implements ColumnRenderer<TracedClass> {
-  _ClassNameColumn() : super.wide('Class');
+  _ClassNameColumn({required this.rootPackage}) : super.wide('Class');
 
   @override
-  String? getValue(TracedClass stats) => stats.cls.name;
+  String? getValue(TracedClass stats) => stats.clazz.name;
 
   // We are removing the tooltip, because it is provided by [HeapClassView].
   @override
   String getTooltip(TracedClass dataObject) => '';
 
-  @override
-  bool get supportsSorting => true;
+  final String? rootPackage;
 
   @override
   Widget build(
@@ -92,20 +91,20 @@ class _ClassNameColumn extends ColumnData<TracedClass>
     return HeapClassView(
       theClass: data.name,
       showCopyButton: isRowSelected,
-      copyGaItem: gac.MemoryEvent.diffClassSingleCopy,
-      rootPackage: serviceConnection.serviceManager.rootInfoNow().package,
+      copyGaItem: gac.MemoryEvents.diffClassSingleCopy.name,
+      rootPackage: rootPackage,
     );
   }
 }
 
 class _InstancesColumn extends ColumnData<TracedClass> {
   _InstancesColumn()
-      : super(
-          'Delta',
-          titleTooltip:
-              'Number of instances, allocated after the class was selected for tracing.',
-          fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
-        );
+    : super(
+        'Delta',
+        titleTooltip:
+            'Number of instances, allocated after the class was selected for tracing.',
+        fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
+      );
 
   @override
   int getValue(TracedClass dataObject) {
@@ -119,7 +118,7 @@ class _InstancesColumn extends ColumnData<TracedClass> {
 class AllocationTracingTable extends StatefulWidget {
   const AllocationTracingTable({super.key, required this.controller});
 
-  final TracingPaneController controller;
+  final TracePaneController controller;
 
   @override
   State<AllocationTracingTable> createState() => _AllocationTracingTableState();
@@ -127,7 +126,7 @@ class AllocationTracingTable extends StatefulWidget {
 
 class _AllocationTracingTableState extends State<AllocationTracingTable> {
   late final _TraceCheckBoxColumn _checkboxColumn;
-  static final _classNameColumn = _ClassNameColumn();
+  late final _ClassNameColumn _classNameColumn;
   static final _instancesColumn = _InstancesColumn();
 
   late final List<ColumnData<TracedClass>> columns;
@@ -135,6 +134,11 @@ class _AllocationTracingTableState extends State<AllocationTracingTable> {
   @override
   void initState() {
     super.initState();
+
+    _classNameColumn = _ClassNameColumn(
+      rootPackage: widget.controller.rootPackage,
+    );
+
     _checkboxColumn = _TraceCheckBoxColumn(controller: widget.controller);
     columns = <ColumnData<TracedClass>>[
       _checkboxColumn,
@@ -149,10 +153,7 @@ class _AllocationTracingTableState extends State<AllocationTracingTable> {
   void _sendFilterEditGaEvent() {
     final now = DateTime.now();
     if (now.difference(_editFilterGaSent) < _editFilterGaThrottling) return;
-    ga.select(
-      gac.memory,
-      gac.MemoryEvent.tracingClassFilter,
-    );
+    ga.select(gac.memory, gac.MemoryEvents.tracingClassFilter.name);
     _editFilterGaSent = now;
   }
 
@@ -176,21 +177,21 @@ class _AllocationTracingTableState extends State<AllocationTracingTable> {
           child: MultiValueListenableBuilder(
             listenables: [
               widget.controller.refreshing,
-              widget.controller.stateForIsolate,
+              widget.controller.selection,
             ],
-            builder: (context, values, __) {
+            builder: (context, values, _) {
               final state = values.second as TracingIsolateState;
               return ValueListenableBuilder<List<TracedClass>>(
                 valueListenable: state.filteredClassList,
                 builder: (context, filteredClassList, _) {
                   return FlatTable<TracedClass>(
-                    keyFactory: (e) => Key(e.cls.id!),
+                    keyFactory: (e) => Key(e.clazz.id!),
                     data: filteredClassList,
                     dataKey: 'allocation-tracing',
                     columns: columns,
                     defaultSortColumn: _classNameColumn,
                     defaultSortDirection: SortDirection.ascending,
-                    selectionNotifier: state.selectedTracedClass,
+                    selectionNotifier: state.selectedClass,
                     pinBehavior: FlatTablePinBehavior.pinOriginalToTop,
                   );
                 },

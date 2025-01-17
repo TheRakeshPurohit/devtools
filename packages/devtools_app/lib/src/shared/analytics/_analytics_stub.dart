@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 // Avoid unused parameters does not play well with conditional imports.
 // ignore_for_file: avoid-unused-parameters
@@ -9,6 +9,7 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
+import 'package:stack_trace/stack_trace.dart' as stack_trace;
 
 import 'analytics_common.dart';
 
@@ -20,22 +21,15 @@ final _log = Logger('_analytics_stub');
 /// both web and desktop, and manipulate this value for tests running on the VM.
 String ideLaunched = '';
 
-Future<void> setAnalyticsEnabled(bool value) async {}
-
 FutureOr<bool> isAnalyticsEnabled() => false;
+
+FutureOr<bool> shouldShowAnalyticsConsentMessage() => false;
 
 void initializeGA() {}
 
 void jsHookupListenerForGA() {}
 
-Future<void> enableAnalytics() async {}
-
-Future<void> disableAnalytics() async {}
-
-void screen(
-  String screenName, [
-  int value = 0,
-]) {
+void screen(String screenName, [int value = 0]) {
   _log.fine('Event: screen(screenName:$screenName, value:$value)');
 }
 
@@ -101,12 +95,18 @@ void impression(
 
 void reportError(
   String errorMessage, {
+  stack_trace.Trace? stackTrace,
   bool fatal = false,
-  ScreenAnalyticsMetrics Function()? screenMetricsProvider,
 }) {}
 
 Future<void> setupDimensions() async {}
 
 void setupUserApplicationDimensions() {}
 
-Map<String, dynamic> generateSurveyQueryParameters() => {};
+Map<String, Object?> generateSurveyQueryParameters() => {};
+
+// TODO(https://github.com/flutter/devtools/issues/7083): remove these
+// when the legacy analytics are fully removed.
+FutureOr<void> legacyOnEnableAnalytics() {}
+FutureOr<void> legacyOnDisableAnalytics() {}
+void legacyOnSetupAnalytics() {}

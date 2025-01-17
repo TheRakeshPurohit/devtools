@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
@@ -11,117 +11,148 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 import '../shared/analytics/analytics.dart' as ga;
 import '../shared/analytics/constants.dart' as gac;
-import '../shared/common_widgets.dart';
+import '../shared/framework/routing.dart';
 import '../shared/globals.dart';
-import '../shared/routing.dart';
+import '../shared/ui/common_widgets.dart';
 
 class EmbeddedExtensionHeader extends StatelessWidget {
   const EmbeddedExtensionHeader({
     super.key,
-    required this.extension,
+    required this.ext,
     required this.onForceReload,
   });
 
-  final DevToolsExtensionConfig extension;
+  final DevToolsExtensionConfig ext;
 
   final VoidCallback onForceReload;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final extensionName = extension.displayName;
-    return Row(
-      children: [
-        RichText(
-          text: TextSpan(
-            text: 'package:$extensionName extension',
-            style: theme.regularTextStyle.copyWith(fontWeight: FontWeight.bold),
+    final extensionName = ext.displayName;
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: borderPadding),
+            child: RichText(
+              text: TextSpan(
+                text: 'package:$extensionName extension',
+                style: theme.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                children: [
+                  TextSpan(
+                    text: ' (v${ext.version})',
+                    style: theme.subtleTextStyle,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: denseSpacing),
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              TextSpan(
-                text: ' (v${extension.version})',
-                style: theme.subtleTextStyle,
+              RichText(
+                text: GaLinkTextSpan(
+                  link: GaLink(
+                    display: 'Report an issue',
+                    url: ext.issueTrackerLink,
+                    gaScreenName:
+                        gac.DevToolsExtensionEvents.extensionScreenId.name,
+                    gaSelectedItemDescription: gac
+                        .DevToolsExtensionEvents.extensionFeedback(ext),
+                  ),
+                  context: context,
+                ),
+              ),
+              const SizedBox(width: denseSpacing),
+              _ExtensionContextMenuButton(
+                ext: ext,
+                onForceReload: onForceReload,
               ),
             ],
           ),
-        ),
-        const Spacer(),
-        RichText(
-          text: LinkTextSpan(
-            link: Link(
-              display: 'Report an issue',
-              url: extension.issueTrackerLink,
-              gaScreenName: gac.DevToolsExtensionEvents.extensionScreenId.name,
-              gaSelectedItemDescription:
-                  gac.DevToolsExtensionEvents.extensionFeedback(extension),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExtensionContextMenuButton extends StatelessWidget {
+  const _ExtensionContextMenuButton({
+    required this.ext,
+    required this.onForceReload,
+  });
+
+  final DevToolsExtensionConfig ext;
+
+  final VoidCallback onForceReload;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ExtensionEnabledState>(
+      valueListenable: extensionService.enabledStateListenable(ext.displayName),
+      builder: (context, activationState, _) {
+        if (activationState != ExtensionEnabledState.enabled) {
+          return const SizedBox.shrink();
+        }
+        return ContextMenuButton(
+          iconSize: defaultIconSize,
+          buttonWidth: buttonMinWidth,
+          menuChildren: <Widget>[
+            PointerInterceptor(
+              child: MenuItemButton(
+                onPressed: () {
+                  // Do not send analytics here because the user must
+                  // confirm that they want to disable the extension from
+                  // the [DisableExtensionDialog]. Analytics will be sent
+                  // there if they confirm that they'd like to disable the
+                  // extension.
+                  unawaited(
+                    showDialog(
+                      context: context,
+                      builder: (_) => DisableExtensionDialog(ext: ext),
+                    ),
+                  );
+                },
+                child: const MaterialIconLabel(
+                  label: 'Disable extension',
+                  iconData: Icons.extension_off_outlined,
+                ),
+              ),
             ),
-            context: context,
-          ),
-        ),
-        const SizedBox(width: denseSpacing),
-        ValueListenableBuilder<ExtensionEnabledState>(
-          valueListenable:
-              extensionService.enabledStateListenable(extension.displayName),
-          builder: (context, activationState, _) {
-            if (activationState == ExtensionEnabledState.enabled) {
-              return ContextMenuButton(
-                iconSize: defaultIconSize,
-                buttonWidth: buttonMinWidth,
-                menuChildren: <Widget>[
-                  PointerInterceptor(
-                    child: MenuItemButton(
-                      onPressed: () {
-                        // Do not send analytics here because the user must
-                        // confirm that they want to disable the extension from
-                        // the [DisableExtensionDialog]. Analytics will be sent
-                        // there if they confirm that they'd like to disable the
-                        // extension.
-                        unawaited(
-                          showDialog(
-                            context: context,
-                            builder: (_) =>
-                                DisableExtensionDialog(extension: extension),
-                          ),
-                        );
-                      },
-                      child: const MaterialIconLabel(
-                        label: 'Disable extension',
-                        iconData: Icons.extension_off_outlined,
-                      ),
-                    ),
-                  ),
-                  PointerInterceptor(
-                    child: MenuItemButton(
-                      onPressed: () {
-                        ga.select(
-                          gac.DevToolsExtensionEvents.extensionScreenId.name,
-                          gac.DevToolsExtensionEvents.extensionForceReload(
-                            extension,
-                          ),
-                        );
-                        onForceReload();
-                      },
-                      child: const MaterialIconLabel(
-                        label: 'Force reload extension',
-                        iconData: Icons.refresh,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
-      ],
+            PointerInterceptor(
+              child: MenuItemButton(
+                onPressed: () {
+                  ga.select(
+                    gac.DevToolsExtensionEvents.extensionScreenId.name,
+                    gac.DevToolsExtensionEvents.extensionForceReload(ext),
+                  );
+                  onForceReload();
+                },
+                child: const MaterialIconLabel(
+                  label: 'Force reload extension',
+                  iconData: Icons.refresh,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
 @visibleForTesting
 class DisableExtensionDialog extends StatelessWidget {
-  const DisableExtensionDialog({super.key, required this.extension});
+  const DisableExtensionDialog({super.key, required this.ext});
 
-  final DevToolsExtensionConfig extension;
+  final DevToolsExtensionConfig ext;
 
   @override
   Widget build(BuildContext context) {
@@ -137,10 +168,7 @@ class DisableExtensionDialog extends StatelessWidget {
               text: 'Are you sure you want to disable the ',
               style: theme.regularTextStyle,
               children: [
-                TextSpan(
-                  text: extension.displayName,
-                  style: theme.fixedFontStyle,
-                ),
+                TextSpan(text: ext.displayName, style: theme.fixedFontStyle),
                 const TextSpan(text: ' extension?'),
               ],
             ),
@@ -156,10 +184,7 @@ class DisableExtensionDialog extends StatelessWidget {
                   style: theme.boldTextStyle,
                 ),
                 WidgetSpan(
-                  child: Icon(
-                    Icons.extension_rounded,
-                    size: defaultIconSize,
-                  ),
+                  child: Icon(Icons.extension_rounded, size: defaultIconSize),
                 ),
                 const TextSpan(text: ' menu.'),
               ],
@@ -172,17 +197,15 @@ class DisableExtensionDialog extends StatelessWidget {
           onPressed: () {
             ga.select(
               gac.DevToolsExtensionEvents.extensionScreenId.name,
-              gac.DevToolsExtensionEvents.extensionDisableManual(extension),
+              gac.DevToolsExtensionEvents.extensionDisableManual(ext),
             );
             unawaited(
-              extensionService.setExtensionEnabledState(
-                extension,
-                enable: false,
-              ),
+              extensionService.setExtensionEnabledState(ext, enable: false),
             );
             Navigator.of(context).pop(dialogDefaultContext);
-            DevToolsRouterDelegate.of(context)
-                .navigateHome(clearScreenParam: true);
+            DevToolsRouterDelegate.of(
+              context,
+            ).navigateHome(clearScreenParam: true);
           },
           child: const Text('YES, DISABLE'),
         ),
@@ -193,12 +216,9 @@ class DisableExtensionDialog extends StatelessWidget {
 }
 
 class EnableExtensionPrompt extends StatelessWidget {
-  const EnableExtensionPrompt({
-    super.key,
-    required this.extension,
-  });
+  const EnableExtensionPrompt({super.key, required this.ext});
 
-  final DevToolsExtensionConfig extension;
+  final DevToolsExtensionConfig ext;
 
   @override
   Widget build(BuildContext context) {
@@ -213,12 +233,10 @@ class EnableExtensionPrompt extends StatelessWidget {
               text: 'The ',
               style: theme.regularTextStyle,
               children: [
-                TextSpan(
-                  text: extension.name,
-                  style: theme.fixedFontStyle,
-                ),
+                TextSpan(text: ext.name, style: theme.fixedFontStyle),
                 const TextSpan(
-                  text: ' extension has not been enabled. Do you want to enable'
+                  text:
+                      ' extension has not been enabled. Do you want to enable'
                       ' this extension?\nYou can always change this setting '
                       'later from the DevTools Extensions ',
                 ),
@@ -228,9 +246,7 @@ class EnableExtensionPrompt extends StatelessWidget {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const TextSpan(
-                  text: ' menu. ',
-                ),
+                const TextSpan(text: ' menu. '),
               ],
             ),
           ),
@@ -242,13 +258,13 @@ class EnableExtensionPrompt extends StatelessWidget {
                 label: 'Enable',
                 gaScreen: gac.DevToolsExtensionEvents.extensionScreenId.name,
                 gaSelection: gac.DevToolsExtensionEvents.extensionEnablePrompt(
-                  extension,
+                  ext,
                 ),
                 elevated: true,
                 onPressed: () {
                   unawaited(
                     extensionService.setExtensionEnabledState(
-                      extension,
+                      ext,
                       enable: true,
                     ),
                   );
@@ -259,17 +275,18 @@ class EnableExtensionPrompt extends StatelessWidget {
                 label: 'No, hide this screen',
                 gaScreen: gac.DevToolsExtensionEvents.extensionScreenId.name,
                 gaSelection: gac.DevToolsExtensionEvents.extensionDisablePrompt(
-                  extension,
+                  ext,
                 ),
                 onPressed: () {
                   unawaited(
                     extensionService.setExtensionEnabledState(
-                      extension,
+                      ext,
                       enable: false,
                     ),
                   );
-                  DevToolsRouterDelegate.of(context)
-                      .navigateHome(clearScreenParam: true);
+                  DevToolsRouterDelegate.of(
+                    context,
+                  ).navigateHome(clearScreenParam: true);
                 },
               ),
             ],

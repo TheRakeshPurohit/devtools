@@ -1,6 +1,6 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be found
-// in the LICENSE file.
+// Copyright 2020 The Flutter Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:math';
@@ -11,7 +11,6 @@ import 'package:flutter/scheduler.dart';
 
 import '../primitives/enum_utils.dart';
 import '../primitives/utils.dart';
-import '../table/table.dart';
 
 /// Returns a [TextSpan] that only includes the first [length] characters of
 /// [span].
@@ -28,7 +27,7 @@ TextSpan truncateTextSpan(TextSpan span, int length) {
     }
     if (span.children != null) {
       children = <TextSpan>[];
-      for (var child in span.children!) {
+      for (final child in span.children!) {
         if (available <= 0) break;
         children.add(truncateHelper(child as TextSpan));
       }
@@ -60,21 +59,30 @@ double calculateTextSpanWidth(TextSpan? span) {
 }
 
 /// Returns the height in pixels of the [span].
-double calculateTextSpanHeight(TextSpan span) {
+Size calculateTextSpanSize(TextSpan span, {double? maxWidth}) {
   final textPainter = TextPainter(
     text: span,
     textAlign: TextAlign.left,
     textDirection: TextDirection.ltr,
-  )..layout();
+  )..layout(maxWidth: maxWidth ?? double.infinity);
 
-  return textPainter.height;
+  final size = Size(textPainter.width, textPainter.height);
+
+  textPainter.dispose();
+
+  return size;
+}
+
+/// Returns the height in pixels of the [span].
+double calculateTextSpanHeight(TextSpan span, {double? maxWidth}) {
+  return calculateTextSpanSize(span, maxWidth: maxWidth).height;
 }
 
 TextSpan? findLongestTextSpan(List<TextSpan> spans) {
   int longestLength = 0;
   TextSpan? longestSpan;
   for (final span in spans) {
-    final int currentLength = span.toPlainText().length;
+    final currentLength = span.toPlainText().length;
     if (currentLength > longestLength) {
       longestLength = currentLength;
       longestSpan = span;
@@ -97,14 +105,14 @@ TextSpan? findLongestTextSpan(List<TextSpan> spans) {
 /// [offsetController].
 class OffsetScrollbar extends StatefulWidget {
   const OffsetScrollbar({
-    Key? key,
+    super.key,
     this.isAlwaysShown = false,
     required this.axis,
     required this.controller,
     required this.offsetController,
     required this.child,
     required this.offsetControllerViewportDimension,
-  }) : super(key: key);
+  });
 
   final bool isAlwaysShown;
   final Axis axis;
@@ -149,7 +157,8 @@ class _OffsetScrollbarState extends State<OffsetScrollbar> {
         // offset controller.
         double delta = 0.0;
         if (widget.offsetController.position.hasContentDimensions) {
-          delta = widget.offsetController.offset -
+          delta =
+              widget.offsetController.offset -
               widget.offsetController.position.maxScrollExtent +
               widget.offsetController.position.minScrollExtent;
           if (widget.offsetController.position.hasViewportDimension) {
@@ -157,22 +166,21 @@ class _OffsetScrollbarState extends State<OffsetScrollbar> {
             // The viewport dimension from the offsetController may be one frame
             // behind the true viewport dimension. We add this delta so the
             // scrollbar always appears stuck to the side of the viewport.
-            delta += widget.offsetControllerViewportDimension -
+            delta +=
+                widget.offsetControllerViewportDimension -
                 widget.offsetController.position.viewportDimension;
           }
         }
-        final offset = widget.axis == Axis.vertical
-            ? Offset(delta, 0.0)
-            : Offset(0.0, delta);
+        final offset =
+            widget.axis == Axis.vertical
+                ? Offset(delta, 0.0)
+                : Offset(0.0, delta);
         return Transform.translate(
           offset: offset,
           child: Scrollbar(
             thumbVisibility: widget.isAlwaysShown,
             controller: widget.controller,
-            child: Transform.translate(
-              offset: -offset,
-              child: child,
-            ),
+            child: Transform.translate(offset: -offset, child: child),
           ),
         );
       },
@@ -182,10 +190,7 @@ class _OffsetScrollbarState extends State<OffsetScrollbar> {
 }
 
 /// Scrolls to [position] if [position] is not already visible in the scroll view.
-void maybeScrollToPosition(
-  ScrollController scrollController,
-  double position,
-) {
+void maybeScrollToPosition(ScrollController scrollController, double position) {
   final extentVisible = Range(
     scrollController.offset,
     scrollController.offset + scrollController.position.extentInside,
@@ -216,6 +221,7 @@ class ColorPair {
 class ThemedColorPair {
   const ThemedColorPair({required this.background, required this.foreground});
 
+  @visibleForTesting
   factory ThemedColorPair.from(ColorPair colorPair) {
     return ThemedColorPair(
       foreground: ThemedColor.fromSingle(colorPair.foreground),
@@ -237,9 +243,7 @@ class ThemedColorPair {
 class ThemedColor {
   const ThemedColor({required this.light, required this.dark});
 
-  const ThemedColor.fromSingle(Color color)
-      : light = color,
-        dark = color;
+  const ThemedColor.fromSingle(Color color) : light = color, dark = color;
 
   final Color light;
 
@@ -251,42 +255,47 @@ class ThemedColor {
 }
 
 enum MediaSize with EnumIndexOrdering {
-  xxs,
-  xs,
-  s,
-  m,
-  l,
-  xl,
+  xxs(widthThreshold: 300.0, heightThreshold: 300),
+  xs(widthThreshold: 600.0, heightThreshold: 450),
+  s(widthThreshold: 900.0, heightThreshold: 600),
+  m(widthThreshold: 1200.0, heightThreshold: 750),
+  l(widthThreshold: 1500.0, heightThreshold: 900),
+  xl(widthThreshold: double.infinity, heightThreshold: double.infinity);
+
+  const MediaSize({
+    required this.widthThreshold,
+    required this.heightThreshold,
+  });
+
+  final double widthThreshold;
+  final double heightThreshold;
 }
 
-class ScreenSize {
-  ScreenSize(BuildContext context) {
-    _height = _calculateHeight(context);
-    _width = _calculateWidth(context);
+final class ScreenSize {
+  factory ScreenSize(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    return ScreenSize._(
+      height: _calculateHeight(size.height),
+      width: _calculateWidth(size.width),
+    );
   }
 
-  MediaSize get height => _height;
-  MediaSize get width => _width;
-  late MediaSize _height;
-  late MediaSize _width;
+  ScreenSize._({required this.height, required this.width});
 
-  MediaSize _calculateWidth(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    if (width < 300) return MediaSize.xxs;
-    if (width < 600) return MediaSize.xs;
-    if (width < 900) return MediaSize.s;
-    if (width < 1200) return MediaSize.m;
-    if (width < 1500) return MediaSize.l;
-    return MediaSize.xl;
+  final MediaSize height;
+  final MediaSize width;
+
+  static MediaSize _calculateHeight(double height) {
+    return MediaSize.values.firstWhere(
+      (size) => height < size.heightThreshold,
+      orElse: () => MediaSize.xl,
+    );
   }
 
-  MediaSize _calculateHeight(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
-    if (height < 300) return MediaSize.xxs;
-    if (height < 450) return MediaSize.xs;
-    if (height < 600) return MediaSize.s;
-    if (height < 750) return MediaSize.m;
-    if (height < 900) return MediaSize.l;
-    return MediaSize.xl;
+  static MediaSize _calculateWidth(double width) {
+    return MediaSize.values.firstWhere(
+      (size) => width < size.widthThreshold,
+      orElse: () => MediaSize.xl,
+    );
   }
 }

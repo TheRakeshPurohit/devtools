@@ -1,11 +1,11 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app/src/screens/profiler/cpu_profile_model.dart';
 import 'package:devtools_app/src/shared/primitives/utils.dart';
 
-final Map<String, dynamic> goldenCpuProfileDataJson = {
+final goldenCpuProfileDataJson = <String, Object?>{
   'type': '_CpuProfileTimeline',
   'samplePeriod': 50,
   'sampleCount': 8,
@@ -16,26 +16,26 @@ final Map<String, dynamic> goldenCpuProfileDataJson = {
   'traceEvents': goldenCpuProfileTraceEvents,
 };
 
-final Map<String, dynamic> emptyCpuProfileDataJson = {
+final emptyCpuProfileDataJson = <String, Object?>{
   'type': '_CpuProfileTimeline',
   'samplePeriod': 50,
   'sampleCount': 0,
   'stackDepth': 128,
   'timeOriginMicros': 47377796685,
   'timeExtentMicros': 0,
-  'stackFrames': {},
+  'stackFrames': <String, Object?>{},
   'traceEvents': [],
 };
 
-final Map<String, dynamic> cpuProfileDataWithUserTagsJson = {
+final cpuProfileDataWithUserTagsJson = <String, Object?>{
   'type': '_CpuProfileTimeline',
   'samplePeriod': 50,
   'sampleCount': 5,
   'stackDepth': 128,
   'timeOriginMicros': 0,
   'timeExtentMicros': 250,
-  'stackFrames': {
-    '140357727781376-1': {
+  'stackFrames': <String, Object?>{
+    '140357727781376-1': <String, Object?>{
       'category': 'Dart',
       'name': 'Frame1',
       'parent': 'cpuProfileRoot',
@@ -43,7 +43,7 @@ final Map<String, dynamic> cpuProfileDataWithUserTagsJson = {
       'packageUri': '',
       'sourceLine': 111,
     },
-    '140357727781376-2': {
+    '140357727781376-2': <String, Object?>{
       'category': 'Dart',
       'name': 'Frame2',
       'parent': '140357727781376-1',
@@ -51,7 +51,7 @@ final Map<String, dynamic> cpuProfileDataWithUserTagsJson = {
           'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/compact_hash.dart',
       'sourceLine': 222,
     },
-    '140357727781376-3': {
+    '140357727781376-3': <String, Object?>{
       'category': 'Dart',
       'name': 'Frame3',
       'parent': '140357727781376-2',
@@ -59,7 +59,7 @@ final Map<String, dynamic> cpuProfileDataWithUserTagsJson = {
       'packageUri': '',
       'sourceLine': 333,
     },
-    '140357727781376-4': {
+    '140357727781376-4': <String, Object?>{
       'category': 'Dart',
       'name': 'Frame4',
       'parent': '140357727781376-2',
@@ -67,7 +67,7 @@ final Map<String, dynamic> cpuProfileDataWithUserTagsJson = {
       'packageUri': '',
       'sourceLine': 444,
     },
-    '140357727781376-5': {
+    '140357727781376-5': <String, Object?>{
       'category': 'Dart',
       'name': 'Frame5',
       'parent': '140357727781376-1',
@@ -75,7 +75,7 @@ final Map<String, dynamic> cpuProfileDataWithUserTagsJson = {
           'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/compact_hash.dart',
       'sourceLine': 555,
     },
-    '140357727781376-6': {
+    '140357727781376-6': <String, Object?>{
       'category': 'Dart',
       'name': 'Frame6',
       'parent': '140357727781376-5',
@@ -85,69 +85,54 @@ final Map<String, dynamic> cpuProfileDataWithUserTagsJson = {
     },
   },
   'traceEvents': [
-    {
+    <String, Object?>{
       'ph': 'P',
       'name': '',
       'pid': 77616,
       'tid': 42247,
       'ts': 50,
       'cat': 'Dart',
-      'args': {
-        'userTag': 'userTagA',
-        'vmTag': 'vmTagA',
-      },
+      'args': <String, Object?>{'userTag': 'userTagA', 'vmTag': 'vmTagA'},
       'sf': '140357727781376-3',
     },
-    {
+    <String, Object?>{
       'ph': 'P',
       'name': '',
       'pid': 77616,
       'tid': 42247,
       'ts': 100,
       'cat': 'Dart',
-      'args': {
-        'userTag': 'userTagB',
-        'vmTag': 'vmTagB',
-      },
+      'args': <String, Object?>{'userTag': 'userTagB', 'vmTag': 'vmTagB'},
       'sf': '140357727781376-4',
     },
-    {
+    <String, Object?>{
       'ph': 'P',
       'name': '',
       'pid': 77616,
       'tid': 42247,
       'ts': 150,
       'cat': 'Dart',
-      'args': {
-        'userTag': 'userTagA',
-        'vmTag': 'vmTagA',
-      },
+      'args': <String, Object?>{'userTag': 'userTagA', 'vmTag': 'vmTagA'},
       'sf': '140357727781376-5',
     },
-    {
+    <String, Object?>{
       'ph': 'P',
       'name': '',
       'pid': 77616,
       'tid': 42247,
       'ts': 200,
       'cat': 'Dart',
-      'args': {
-        'userTag': 'userTagC',
-        'vmTag': 'vmTagC',
-      },
+      'args': <String, Object?>{'userTag': 'userTagC', 'vmTag': 'vmTagC'},
       'sf': '140357727781376-5',
     },
-    {
+    <String, Object?>{
       'ph': 'P',
       'name': '',
       'pid': 77616,
       'tid': 42247,
       'ts': 250,
       'cat': 'Dart',
-      'args': {
-        'userTag': 'userTagC',
-        'vmTag': 'vmTagC',
-      },
+      'args': <String, Object?>{'userTag': 'userTagC', 'vmTag': 'vmTagC'},
       'sf': '140357727781376-6',
     },
   ],
@@ -208,7 +193,7 @@ const goldenCpuProfileString = '''
               Gesture._invokeFrameCallback - children: 0 - excl: 1 - incl: 1
 ''';
 
-final Map<String, dynamic> cpuProfileResponseJson = {
+final cpuProfileResponseJson = <String, Object?>{
   'type': '_CpuProfileTimeline',
   'samplePeriod': 50,
   'stackDepth': 128,
@@ -220,7 +205,7 @@ final Map<String, dynamic> cpuProfileResponseJson = {
   'traceEvents': goldenCpuProfileTraceEvents,
 };
 
-final Map<String, dynamic> cpuProfileResponseEmptyJson = {
+final cpuProfileResponseEmptyJson = <String, Object?>{
   'type': '_CpuProfileTimeline',
   'samplePeriod': 0,
   'stackDepth': 128,
@@ -228,12 +213,12 @@ final Map<String, dynamic> cpuProfileResponseEmptyJson = {
   'timeSpan': 0.0,
   'timeOriginMicros': 47377796685,
   'timeExtentMicros': 0,
-  'stackFrames': {},
+  'stackFrames': <String, Object?>{},
   'traceEvents': [],
 };
 
-const String goldenSamplesIsolate = '140357727781376';
-final Map<String, dynamic> goldenCpuSamplesJson = {
+const goldenSamplesIsolate = '140357727781376';
+final goldenCpuSamplesJson = <String, Object?>{
   'type': 'CpuSamples',
   'samplePeriod': 50,
   'maxStackDepth': 128,
@@ -242,12 +227,12 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
   'timeExtentMicros': 3000,
   'pid': 77616,
   'functions': [
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl': '',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'thread_start',
@@ -260,12 +245,12 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl': '',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': '_pthread_start',
@@ -278,13 +263,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/compact_hash.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': '_drawFrame',
@@ -297,13 +282,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'file:///path/to/flutter/packages/flutter/lib/src/scheduler/binding.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': '_WidgetsFlutterBinding.draw',
@@ -316,13 +301,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'path/to/flutter/packages/flutter/lib/src/rendering/binding.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'RendererBinding.drawFrame',
@@ -335,13 +320,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/list.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': '_RenderProxyBox.paint',
@@ -352,7 +337,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'abstract': false,
         'isGetter': false,
         'isSetter': false,
-        'location': {
+        'location': <String, Object?>{
           'type': 'SourceLocation',
           'script': null,
           'tokenPos': -1,
@@ -360,13 +345,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         },
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'path/to/flutter/packages/flutter/lib/src/painting/context.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'PaintingContext.paintChild',
@@ -379,12 +364,12 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl': '',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': '_SyncBlock.finish',
@@ -397,12 +382,12 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl': '',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': '[Truncated]',
@@ -415,13 +400,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'file:///path/to/flutter/packages/flutter/lib/src/rendering/object.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'RenderObject._getSemanticsForParent.<closure>',
@@ -434,13 +419,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'file:///path/to/flutter/packages/flutter/lib/src/rendering/object.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'RenderObject._getSemanticsForParent',
@@ -453,13 +438,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'path/to/flutter/packages/flutter/lib/src/rendering/proxy_box.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'RenderPhysicalModel.paint',
@@ -472,13 +457,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'path/to/flutter/packages/flutter/lib/src/rendering/custom_layout.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'RenderCustomMultiChildLayoutBox.paint',
@@ -491,13 +476,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/hash.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': '_RenderCustomMultiChildLayoutBox.defaultPaint',
@@ -510,13 +495,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'path/to/flutter/packages/flutter/lib/src/rendering/object.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'RenderObject._paintWithContext',
@@ -529,13 +514,13 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl':
           'path/to/flutter/packages/flutter/lib/src/rendering/stack.dart',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'RenderStack.paintStack',
@@ -548,12 +533,12 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Native',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl': '',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name':
@@ -567,12 +552,12 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Tag',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl': '',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'Foo',
@@ -585,12 +570,12 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
         'isSetter': false,
       },
     },
-    {
+    <String, Object?>{
       'kind': 'Tag',
       'inclusiveTicks': 0,
       'exclusiveTicks': 0,
       'resolvedUrl': '',
-      'function': {
+      'function': <String, Object?>{
         'type': '@Function',
         'id': '',
         'name': 'Default',
@@ -605,7 +590,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
     },
   ],
   'samples': [
-    {
+    <String, Object?>{
       'tid': 42247,
       'timestamp': 47377796685,
       'stack': [4, 3, 2, 1, 0],
@@ -613,7 +598,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
       'userTag': 'Foo',
       'vmTag': 'Dart',
     },
-    {
+    <String, Object?>{
       'tid': 42247,
       'timestamp': 47377797975,
       'stack': [7, 6, 5, 2, 1, 0],
@@ -621,7 +606,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
       'userTag': 'Foo',
       'vmTag': 'Dart',
     },
-    {
+    <String, Object?>{
       'tid': 42247,
       'timestamp': 47377799063,
       'stack': [10, 9, 8],
@@ -629,7 +614,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
       'userTag': 'Foo',
       'vmTag': 'Dart',
     },
-    {
+    <String, Object?>{
       'tid': 42247,
       'timestamp': 47377800363,
       'stack': [13, 12, 11, 8],
@@ -637,7 +622,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
       'userTag': 'Default',
       'vmTag': 'VM',
     },
-    {
+    <String, Object?>{
       'tid': 42247,
       'timestamp': 47377800463,
       'stack': [13, 12, 11, 8],
@@ -645,7 +630,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
       'userTag': 'Default',
       'vmTag': 'VM',
     },
-    {
+    <String, Object?>{
       'tid': 42247,
       'timestamp': 47377800563,
       'stack': [13, 12, 11, 8],
@@ -653,7 +638,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
       'userTag': 'Default',
       'vmTag': 'VM',
     },
-    {
+    <String, Object?>{
       'tid': 42247,
       'timestamp': 47377800663,
       'stack': [14, 13, 12, 11, 8],
@@ -661,7 +646,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
       'userTag': 'Default',
       'vmTag': 'VM',
     },
-    {
+    <String, Object?>{
       'tid': 42247,
       'timestamp': 47377800763,
       'stack': [16, 15, 13, 12, 11, 8],
@@ -672,7 +657,7 @@ final Map<String, dynamic> goldenCpuSamplesJson = {
   ],
 };
 
-final Map<String, String> goldenResolvedUriMap = {
+final goldenResolvedUriMap = <String, String>{
   'path/to/flutter/packages/flutter/lib/src/rendering/proxy_box.dart':
       'package:flutter/lib/src/rendering/proxy_box.dart',
   'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/compact_hash.dart':
@@ -693,67 +678,63 @@ final Map<String, String> goldenResolvedUriMap = {
       'package:flutter/widgets/binding.dart',
 };
 
-final Map<String, dynamic> goldenCpuProfileStackFrames =
-    Map.from(subProfileStackFrames)
-      ..addAll({
-        '140357727781376-12': {
-          'category': 'Dart',
-          'name': 'RenderPhysicalModel.paint',
-          'parent': '140357727781376-9',
-          'resolvedUrl':
-              'path/to/flutter/packages/flutter/lib/src/rendering/proxy_box.dart',
-          'packageUri': 'package:flutter/lib/src/rendering/proxy_box.dart',
-          'sourceLine': null,
-        },
-        '140357727781376-13': {
-          'category': 'Dart',
-          'name': 'RenderCustomMultiChildLayoutBox.paint',
-          'parent': '140357727781376-12',
-          'resolvedUrl':
-              'path/to/flutter/packages/flutter/lib/src/rendering/custom_layout.dart',
-          'packageUri': 'package:flutter/rendering/custom_layout.dart',
-          'sourceLine': null,
-        },
-        '140357727781376-14': {
-          'category': 'Dart',
-          'name': '_RenderCustomMultiChildLayoutBox.defaultPaint',
-          'parent': '140357727781376-13',
-          'resolvedUrl':
-              'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/hash.dart',
-          'packageUri': 'dart:vm/hash.dart',
-          'sourceLine': null,
-        },
-        '140357727781376-15': {
-          'category': 'Dart',
-          'name': 'RenderObject._paintWithContext',
-          'parent': '140357727781376-14',
-          'resolvedUrl':
-              'path/to/flutter/packages/flutter/lib/src/rendering/object.dart',
-          'packageUri': 'package:flutter/rendering/object.dart',
-          'sourceLine': null,
-        },
-        '140357727781376-16': {
-          'category': 'Dart',
-          'name': 'RenderStack.paintStack',
-          'parent': '140357727781376-14',
-          'resolvedUrl':
-              'path/to/flutter/packages/flutter/lib/src/rendering/stack.dart',
-          'packageUri': 'package:flutter/rendering/stack.dart',
-          'sourceLine': null,
-        },
-        '140357727781376-17': {
-          'category': 'Dart',
-          'name':
-              '_WidgetsFlutterBinding&BindingBase&Gesture._invokeFrameCallback',
-          'parent': '140357727781376-16',
-          'resolvedUrl': '',
-          'packageUri': '',
-          'sourceLine': null,
-        },
-      });
+final goldenCpuProfileStackFrames = Map.from(subProfileStackFrames)..addAll({
+  '140357727781376-12': <String, Object?>{
+    'category': 'Dart',
+    'name': 'RenderPhysicalModel.paint',
+    'parent': '140357727781376-9',
+    'resolvedUrl':
+        'path/to/flutter/packages/flutter/lib/src/rendering/proxy_box.dart',
+    'packageUri': 'package:flutter/lib/src/rendering/proxy_box.dart',
+    'sourceLine': null,
+  },
+  '140357727781376-13': <String, Object?>{
+    'category': 'Dart',
+    'name': 'RenderCustomMultiChildLayoutBox.paint',
+    'parent': '140357727781376-12',
+    'resolvedUrl':
+        'path/to/flutter/packages/flutter/lib/src/rendering/custom_layout.dart',
+    'packageUri': 'package:flutter/rendering/custom_layout.dart',
+    'sourceLine': null,
+  },
+  '140357727781376-14': <String, Object?>{
+    'category': 'Dart',
+    'name': '_RenderCustomMultiChildLayoutBox.defaultPaint',
+    'parent': '140357727781376-13',
+    'resolvedUrl': 'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/hash.dart',
+    'packageUri': 'dart:vm/hash.dart',
+    'sourceLine': null,
+  },
+  '140357727781376-15': <String, Object?>{
+    'category': 'Dart',
+    'name': 'RenderObject._paintWithContext',
+    'parent': '140357727781376-14',
+    'resolvedUrl':
+        'path/to/flutter/packages/flutter/lib/src/rendering/object.dart',
+    'packageUri': 'package:flutter/rendering/object.dart',
+    'sourceLine': null,
+  },
+  '140357727781376-16': <String, Object?>{
+    'category': 'Dart',
+    'name': 'RenderStack.paintStack',
+    'parent': '140357727781376-14',
+    'resolvedUrl':
+        'path/to/flutter/packages/flutter/lib/src/rendering/stack.dart',
+    'packageUri': 'package:flutter/rendering/stack.dart',
+    'sourceLine': null,
+  },
+  '140357727781376-17': <String, Object?>{
+    'category': 'Dart',
+    'name': '_WidgetsFlutterBinding&BindingBase&Gesture._invokeFrameCallback',
+    'parent': '140357727781376-16',
+    'resolvedUrl': '',
+    'packageUri': '',
+    'sourceLine': null,
+  },
+});
 
-final subProfileStackFrames = {
-  '140357727781376-1': {
+final subProfileStackFrames = <String, Object?>{
+  '140357727781376-1': <String, Object?>{
     'category': 'Dart',
     'name': 'thread_start',
     'parent': 'cpuProfileRoot',
@@ -761,7 +742,7 @@ final subProfileStackFrames = {
     'packageUri': '',
     'sourceLine': null,
   },
-  '140357727781376-2': {
+  '140357727781376-2': <String, Object?>{
     'category': 'Dart',
     'name': '_pthread_start',
     'parent': '140357727781376-1',
@@ -769,7 +750,7 @@ final subProfileStackFrames = {
     'packageUri': '',
     'sourceLine': null,
   },
-  '140357727781376-3': {
+  '140357727781376-3': <String, Object?>{
     'category': 'Dart',
     'name': '_drawFrame',
     'parent': '140357727781376-2',
@@ -778,7 +759,7 @@ final subProfileStackFrames = {
     'packageUri': 'dart:vm/compact_hash.dart',
     'sourceLine': null,
   },
-  '140357727781376-4': {
+  '140357727781376-4': <String, Object?>{
     'category': 'Dart',
     'name': '_WidgetsFlutterBinding.draw',
     'parent': '140357727781376-3',
@@ -788,7 +769,7 @@ final subProfileStackFrames = {
         'file:///path/to/flutter/packages/flutter/lib/src/scheduler/binding.dart',
     'sourceLine': null,
   },
-  '140357727781376-5': {
+  '140357727781376-5': <String, Object?>{
     'category': 'Dart',
     'name': 'RendererBinding.drawFrame',
     'parent': '140357727781376-4',
@@ -798,7 +779,7 @@ final subProfileStackFrames = {
         'path/to/flutter/packages/flutter/lib/src/rendering/binding.dart',
     'sourceLine': null,
   },
-  '140357727781376-6': {
+  '140357727781376-6': <String, Object?>{
     'category': 'Dart',
     'name': '_RenderProxyBox.paint',
     'parent': '140357727781376-3',
@@ -806,7 +787,7 @@ final subProfileStackFrames = {
     'packageUri': 'dart:vm/list.dart',
     'sourceLine': 123321,
   },
-  '140357727781376-7': {
+  '140357727781376-7': <String, Object?>{
     'category': 'Dart',
     'name': 'PaintingContext.paintChild',
     'parent': '140357727781376-6',
@@ -815,7 +796,7 @@ final subProfileStackFrames = {
     'packageUri': 'package:flutter/painting/context.dart',
     'sourceLine': null,
   },
-  '140357727781376-8': {
+  '140357727781376-8': <String, Object?>{
     'category': 'Dart',
     'name': '_SyncBlock.finish',
     'parent': '140357727781376-7',
@@ -823,7 +804,7 @@ final subProfileStackFrames = {
     'packageUri': '',
     'sourceLine': null,
   },
-  '140357727781376-9': {
+  '140357727781376-9': <String, Object?>{
     'category': 'Dart',
     'name': '[Truncated]',
     'parent': 'cpuProfileRoot',
@@ -831,7 +812,7 @@ final subProfileStackFrames = {
     'packageUri': '',
     'sourceLine': null,
   },
-  '140357727781376-10': {
+  '140357727781376-10': <String, Object?>{
     'category': 'Dart',
     'name': 'RenderObject._getSemanticsForParent.<closure>',
     'parent': '140357727781376-9',
@@ -841,7 +822,7 @@ final subProfileStackFrames = {
         'file:///path/to/flutter/packages/flutter/lib/src/rendering/object.dart',
     'sourceLine': null,
   },
-  '140357727781376-11': {
+  '140357727781376-11': <String, Object?>{
     'category': 'Dart',
     'name': 'RenderObject._getSemanticsForParent',
     'parent': '140357727781376-10',
@@ -853,8 +834,8 @@ final subProfileStackFrames = {
   },
 };
 
-final filteredStackFrames = {
-  '140357727781376-1': {
+final filteredStackFrames = <String, Object?>{
+  '140357727781376-1': <String, Object?>{
     'category': 'Dart',
     'name': 'thread_start',
     'parent': 'cpuProfileRoot',
@@ -862,7 +843,7 @@ final filteredStackFrames = {
     'packageUri': '',
     'sourceLine': null,
   },
-  '140357727781376-2': {
+  '140357727781376-2': <String, Object?>{
     'category': 'Dart',
     'name': '_pthread_start',
     'parent': '140357727781376-1',
@@ -870,7 +851,7 @@ final filteredStackFrames = {
     'packageUri': '',
     'sourceLine': null,
   },
-  '140357727781376-4': {
+  '140357727781376-4': <String, Object?>{
     'category': 'Dart',
     'name': '_WidgetsFlutterBinding.draw',
     'parent': '140357727781376-2',
@@ -880,7 +861,7 @@ final filteredStackFrames = {
         'file:///path/to/flutter/packages/flutter/lib/src/scheduler/binding.dart',
     'sourceLine': null,
   },
-  '140357727781376-5': {
+  '140357727781376-5': <String, Object?>{
     'category': 'Dart',
     'name': 'RendererBinding.drawFrame',
     'parent': '140357727781376-4',
@@ -890,7 +871,7 @@ final filteredStackFrames = {
         'path/to/flutter/packages/flutter/lib/src/rendering/binding.dart',
     'sourceLine': null,
   },
-  '140357727781376-7': {
+  '140357727781376-7': <String, Object?>{
     'category': 'Dart',
     'name': 'PaintingContext.paintChild',
     'parent': '140357727781376-2',
@@ -899,7 +880,7 @@ final filteredStackFrames = {
     'packageUri': 'package:flutter/painting/context.dart',
     'sourceLine': null,
   },
-  '140357727781376-8': {
+  '140357727781376-8': <String, Object?>{
     'category': 'Dart',
     'name': '_SyncBlock.finish',
     'parent': '140357727781376-7',
@@ -907,7 +888,7 @@ final filteredStackFrames = {
     'packageUri': '',
     'sourceLine': null,
   },
-  '140357727781376-9': {
+  '140357727781376-9': <String, Object?>{
     'category': 'Dart',
     'name': '[Truncated]',
     'parent': 'cpuProfileRoot',
@@ -915,7 +896,7 @@ final filteredStackFrames = {
     'packageUri': '',
     'sourceLine': null,
   },
-  '140357727781376-10': {
+  '140357727781376-10': <String, Object?>{
     'category': 'Dart',
     'name': 'RenderObject._getSemanticsForParent.<closure>',
     'parent': '140357727781376-9',
@@ -925,7 +906,7 @@ final filteredStackFrames = {
         'file:///path/to/flutter/packages/flutter/lib/src/rendering/object.dart',
     'sourceLine': null,
   },
-  '140357727781376-11': {
+  '140357727781376-11': <String, Object?>{
     'category': 'Dart',
     'name': 'RenderObject._getSemanticsForParent',
     'parent': '140357727781376-10',
@@ -935,7 +916,7 @@ final filteredStackFrames = {
         'file:///path/to/flutter/packages/flutter/lib/src/rendering/object.dart',
     'sourceLine': null,
   },
-  '140357727781376-12': {
+  '140357727781376-12': <String, Object?>{
     'category': 'Dart',
     'name': 'RenderPhysicalModel.paint',
     'parent': '140357727781376-9',
@@ -944,7 +925,7 @@ final filteredStackFrames = {
     'packageUri': 'package:flutter/lib/src/rendering/proxy_box.dart',
     'sourceLine': null,
   },
-  '140357727781376-13': {
+  '140357727781376-13': <String, Object?>{
     'category': 'Dart',
     'name': 'RenderCustomMultiChildLayoutBox.paint',
     'parent': '140357727781376-12',
@@ -953,7 +934,7 @@ final filteredStackFrames = {
     'packageUri': 'package:flutter/rendering/custom_layout.dart',
     'sourceLine': null,
   },
-  '140357727781376-15': {
+  '140357727781376-15': <String, Object?>{
     'category': 'Dart',
     'name': 'RenderObject._paintWithContext',
     'parent': '140357727781376-13',
@@ -962,7 +943,7 @@ final filteredStackFrames = {
     'packageUri': 'package:flutter/rendering/object.dart',
     'sourceLine': null,
   },
-  '140357727781376-16': {
+  '140357727781376-16': <String, Object?>{
     'category': 'Dart',
     'name': 'RenderStack.paintStack',
     'parent': '140357727781376-13',
@@ -971,7 +952,7 @@ final filteredStackFrames = {
     'packageUri': 'package:flutter/rendering/stack.dart',
     'sourceLine': null,
   },
-  '140357727781376-17': {
+  '140357727781376-17': <String, Object?>{
     'category': 'Dart',
     'name': '_WidgetsFlutterBinding&BindingBase&Gesture._invokeFrameCallback',
     'parent': '140357727781376-16',
@@ -982,225 +963,175 @@ final filteredStackFrames = {
 };
 
 final filteredCpuSampleTraceEvents = [
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377796685,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Foo',
-      'vmTag': 'Dart',
-    },
+    'args': <String, Object?>{'userTag': 'Foo', 'vmTag': 'Dart'},
     'sf': '140357727781376-5',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377797975,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Foo',
-      'vmTag': 'Dart',
-    },
+    'args': <String, Object?>{'userTag': 'Foo', 'vmTag': 'Dart'},
     'sf': '140357727781376-8',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377799063,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Foo',
-      'vmTag': 'Dart',
-    },
+    'args': <String, Object?>{'userTag': 'Foo', 'vmTag': 'Dart'},
     'sf': '140357727781376-11',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377800363,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-13',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377800463,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-13',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377800563,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-13',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377800663,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-15',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377800763,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Default',
-      'vmTag': 'VM',
-    },
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
     'sf': '140357727781376-17',
   },
 ];
 
-final List<Map<String, dynamic>> goldenCpuProfileTraceEvents =
-    List.from(subProfileTraceEvents)
-      ..addAll([
-        {
-          'ph': 'P',
-          'name': '',
-          'pid': 77616,
-          'tid': 42247,
-          'ts': 47377800363,
-          'cat': 'Dart',
-          'args': <String, Object?>{
-            'userTag': 'Default',
-            'vmTag': 'VM',
-          },
-          'sf': '140357727781376-14',
-        },
-        {
-          'ph': 'P',
-          'name': '',
-          'pid': 77616,
-          'tid': 42247,
-          'ts': 47377800463,
-          'cat': 'Dart',
-          'args': <String, Object?>{
-            'userTag': 'Default',
-            'vmTag': 'VM',
-          },
-          'sf': '140357727781376-14',
-        },
-        {
-          'ph': 'P',
-          'name': '',
-          'pid': 77616,
-          'tid': 42247,
-          'ts': 47377800563,
-          'cat': 'Dart',
-          'args': <String, Object?>{
-            'userTag': 'Default',
-            'vmTag': 'VM',
-          },
-          'sf': '140357727781376-14',
-        },
-        {
-          'ph': 'P',
-          'name': '',
-          'pid': 77616,
-          'tid': 42247,
-          'ts': 47377800663,
-          'cat': 'Dart',
-          'args': <String, Object?>{
-            'userTag': 'Default',
-            'vmTag': 'VM',
-          },
-          'sf': '140357727781376-15',
-        },
-        {
-          'ph': 'P',
-          'name': '',
-          'pid': 77616,
-          'tid': 42247,
-          'ts': 47377800763,
-          'cat': 'Dart',
-          'args': <String, Object?>{
-            'userTag': 'Default',
-            'vmTag': 'VM',
-          },
-          'sf': '140357727781376-17',
-        },
-      ]);
+final goldenCpuProfileTraceEvents = List.of(subProfileTraceEvents)..addAll([
+  <String, Object?>{
+    'ph': 'P',
+    'name': '',
+    'pid': 77616,
+    'tid': 42247,
+    'ts': 47377800363,
+    'cat': 'Dart',
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
+    'sf': '140357727781376-14',
+  },
+  <String, Object?>{
+    'ph': 'P',
+    'name': '',
+    'pid': 77616,
+    'tid': 42247,
+    'ts': 47377800463,
+    'cat': 'Dart',
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
+    'sf': '140357727781376-14',
+  },
+  <String, Object?>{
+    'ph': 'P',
+    'name': '',
+    'pid': 77616,
+    'tid': 42247,
+    'ts': 47377800563,
+    'cat': 'Dart',
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
+    'sf': '140357727781376-14',
+  },
+  <String, Object?>{
+    'ph': 'P',
+    'name': '',
+    'pid': 77616,
+    'tid': 42247,
+    'ts': 47377800663,
+    'cat': 'Dart',
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
+    'sf': '140357727781376-15',
+  },
+  <String, Object?>{
+    'ph': 'P',
+    'name': '',
+    'pid': 77616,
+    'tid': 42247,
+    'ts': 47377800763,
+    'cat': 'Dart',
+    'args': <String, Object?>{'userTag': 'Default', 'vmTag': 'VM'},
+    'sf': '140357727781376-17',
+  },
+]);
 
 final subProfileTraceEvents = [
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377796685,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Foo',
-      'vmTag': 'Dart',
-    },
+    'args': <String, Object?>{'userTag': 'Foo', 'vmTag': 'Dart'},
     'sf': '140357727781376-5',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377797975,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Foo',
-      'vmTag': 'Dart',
-    },
+    'args': <String, Object?>{'userTag': 'Foo', 'vmTag': 'Dart'},
     'sf': '140357727781376-8',
   },
-  {
+  <String, Object?>{
     'ph': 'P',
     'name': '',
     'pid': 77616,
     'tid': 42247,
     'ts': 47377799063,
     'cat': 'Dart',
-    'args': <String, Object?>{
-      'userTag': 'Foo',
-      'vmTag': 'Dart',
-    },
+    'args': <String, Object?>{'userTag': 'Foo', 'vmTag': 'Dart'},
     'sf': '140357727781376-11',
   },
 ];
 
-final responseWithMissingLeafFrame = {
+final responseWithMissingLeafFrame = <String, Object?>{
   'type': '_CpuProfileTimeline',
   'samplePeriod': 1000,
   'stackDepth': 128,
@@ -1208,30 +1139,30 @@ final responseWithMissingLeafFrame = {
   'timeSpan': 0.003678,
   'timeOriginMicros': 47377796685,
   'timeExtentMicros': 3678,
-  'stackFrames': {
+  'stackFrames': <String, Object?>{
     // Missing stack frame 140357727781376-0
-    '140357727781376-1': {
+    '140357727781376-1': <String, Object?>{
       'category': 'Dart',
       'name': 'thread_start',
       'parent': 'cpuProfileRoot',
       'resolvedUrl': '',
       'processerdUrl': '',
     },
-    '140357727781376-2': {
+    '140357727781376-2': <String, Object?>{
       'category': 'Dart',
       'name': '_pthread_start',
       'parent': '140357727781376-1',
       'resolvedUrl': '',
       'packageUri': '',
     },
-    '140357727781376-3': {
+    '140357727781376-3': <String, Object?>{
       'category': 'Dart',
       'name': '_drawFrame',
       'parent': '140357727781376-2',
       'resolvedUrl':
           'org-dartlang-sdk:///third_party/dart/sdk/lib/vm/hash.dart',
     },
-    '140357727781376-4': {
+    '140357727781376-4': <String, Object?>{
       'category': 'Dart',
       'name': '_WidgetsFlutterBinding&BindingBase',
       'parent': '140357727781376-3',
@@ -1240,7 +1171,7 @@ final responseWithMissingLeafFrame = {
     },
   },
   'traceEvents': [
-    {
+    <String, Object?>{
       'ph': 'P',
       'name': '',
       'pid': 77616,
@@ -1250,7 +1181,7 @@ final responseWithMissingLeafFrame = {
       'args': <String, Object?>{},
       'sf': '140357727781376-0',
     },
-    {
+    <String, Object?>{
       'ph': 'P',
       'name': '',
       'pid': 77616,
@@ -1260,7 +1191,7 @@ final responseWithMissingLeafFrame = {
       'args': <String, Object?>{},
       'sf': '140357727781376-2',
     },
-    {
+    <String, Object?>{
       'ph': 'P',
       'name': '',
       'pid': 77616,
@@ -1273,16 +1204,17 @@ final responseWithMissingLeafFrame = {
   ],
 };
 
-final CpuProfileMetaData profileMetaData = CpuProfileMetaData(
+final profileMetaData = CpuProfileMetaData(
   sampleCount: 10,
   samplePeriod: 1000,
   stackDepth: 128,
-  time: TimeRange()
-    ..start = const Duration()
-    ..end = const Duration(microseconds: 10000),
+  time:
+      TimeRange()
+        ..start = const Duration()
+        ..end = const Duration(microseconds: 10000),
 );
 
-final CpuStackFrame tagFrameA = CpuStackFrame(
+final tagFrameA = CpuStackFrame(
   id: 'id_tag_0',
   name: 'TagA',
   verboseName: 'TagA',
@@ -1295,7 +1227,7 @@ final CpuStackFrame tagFrameA = CpuStackFrame(
   isTag: true,
 )..exclusiveSampleCount = 0;
 
-final CpuStackFrame stackFrameA = CpuStackFrame(
+final stackFrameA = CpuStackFrame(
   id: 'id_0',
   name: 'A',
   verboseName: 'A',
@@ -1308,7 +1240,7 @@ final CpuStackFrame stackFrameA = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 0;
 
-final CpuStackFrame stackFrameB = CpuStackFrame(
+final stackFrameB = CpuStackFrame(
   id: 'id_1',
   name: 'B',
   verboseName: 'B',
@@ -1321,7 +1253,7 @@ final CpuStackFrame stackFrameB = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 0;
 
-final CpuStackFrame stackFrameC = CpuStackFrame(
+final stackFrameC = CpuStackFrame(
   id: 'id_2',
   name: 'C',
   verboseName: 'C',
@@ -1335,7 +1267,7 @@ final CpuStackFrame stackFrameC = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 2;
 
-final CpuStackFrame stackFrameD = CpuStackFrame(
+final stackFrameD = CpuStackFrame(
   id: 'id_3',
   name: 'D',
   verboseName: 'D',
@@ -1348,7 +1280,7 @@ final CpuStackFrame stackFrameD = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 2;
 
-final CpuStackFrame stackFrameE = CpuStackFrame(
+final stackFrameE = CpuStackFrame(
   id: 'id_4',
   name: 'E',
   verboseName: 'E',
@@ -1361,7 +1293,7 @@ final CpuStackFrame stackFrameE = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 1;
 
-final CpuStackFrame stackFrameF = CpuStackFrame(
+final stackFrameF = CpuStackFrame(
   id: 'id_5',
   name: 'F',
   verboseName: 'F',
@@ -1374,7 +1306,7 @@ final CpuStackFrame stackFrameF = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 0;
 
-final CpuStackFrame stackFrameF2 = CpuStackFrame(
+final stackFrameF2 = CpuStackFrame(
   id: 'id_6',
   name: 'F',
   verboseName: 'F',
@@ -1387,7 +1319,7 @@ final CpuStackFrame stackFrameF2 = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 3;
 
-final CpuStackFrame stackFrameC2 = CpuStackFrame(
+final stackFrameC2 = CpuStackFrame(
   id: 'id_7',
   name: 'C',
   verboseName: 'C',
@@ -1401,7 +1333,7 @@ final CpuStackFrame stackFrameC2 = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 1;
 
-final CpuStackFrame stackFrameC3 = CpuStackFrame(
+final stackFrameC3 = CpuStackFrame(
   id: 'id_8',
   name: 'C',
   verboseName: 'C',
@@ -1415,7 +1347,7 @@ final CpuStackFrame stackFrameC3 = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 1;
 
-final CpuStackFrame stackFrameC4 = CpuStackFrame(
+final stackFrameC4 = CpuStackFrame(
   id: 'id_8',
   name: 'C',
   verboseName: 'C',
@@ -1430,7 +1362,7 @@ final CpuStackFrame stackFrameC4 = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 1;
 
-final CpuStackFrame stackFrameG = CpuStackFrame(
+final stackFrameG = CpuStackFrame(
   id: 'id_9',
   name: 'G',
   verboseName: 'G',
@@ -1445,26 +1377,25 @@ final CpuStackFrame stackFrameG = CpuStackFrame(
   isTag: false,
 )..exclusiveSampleCount = 1;
 
-final CpuStackFrame testStackFrameWithRoot = CpuStackFrame.root(profileMetaData)
+final testStackFrameWithRoot = CpuStackFrame.root(profileMetaData)
   ..addChild(testStackFrame.deepCopy());
 
-final CpuStackFrame testStackFrame = stackFrameA
-  ..addChild(
-    stackFrameB
-      ..addChild(stackFrameC)
-      ..addChild(
-        stackFrameD
-          ..addChild(stackFrameE..addChild(stackFrameF..addChild(stackFrameC2)))
-          ..addChild(stackFrameF2..addChild(stackFrameC3)),
-      ),
-  );
+final testStackFrame =
+    stackFrameA..addChild(
+      stackFrameB
+        ..addChild(stackFrameC)
+        ..addChild(
+          stackFrameD
+            ..addChild(
+              stackFrameE..addChild(stackFrameF..addChild(stackFrameC2)),
+            )
+            ..addChild(stackFrameF2..addChild(stackFrameC3)),
+        ),
+    );
 
-final CpuStackFrame testTagRootedStackFrame = tagFrameA
-  ..addChild(
-    testStackFrame.deepCopy(),
-  );
+final testTagRootedStackFrame = tagFrameA..addChild(testStackFrame.deepCopy());
 
-const String testStackFrameWithRootStringGolden = '''
+const testStackFrameWithRootStringGolden = '''
   all - children: 1 - excl: 0 - incl: 10
     A - children: 1 - excl: 0 - incl: 10
       B - children: 2 - excl: 0 - incl: 10
@@ -1477,7 +1408,7 @@ const String testStackFrameWithRootStringGolden = '''
             C - children: 0 - excl: 1 - incl: 1
 ''';
 
-const String testStackFrameStringGolden = '''
+const testStackFrameStringGolden = '''
   A - children: 1 - excl: 0 - incl: 10
     B - children: 2 - excl: 0 - incl: 10
       C - children: 0 - excl: 2 - incl: 2
@@ -1489,7 +1420,7 @@ const String testStackFrameStringGolden = '''
           C - children: 0 - excl: 1 - incl: 1
 ''';
 
-const String bottomUpPreMergeGolden = '''
+const bottomUpPreMergeGolden = '''
   C - children: 1 - excl: 2 - incl: 2
     B - children: 1 - excl: 2 - incl: 2
       A - children: 0 - excl: 2 - incl: 2
@@ -1523,7 +1454,7 @@ const String bottomUpPreMergeGolden = '''
 
 ''';
 
-const String bottomUpGolden = '''
+const bottomUpGolden = '''
   C - children: 2 - excl: 4 - incl: 4
     B - children: 1 - excl: 2 - incl: 2
       A - children: 0 - excl: 2 - incl: 2
@@ -1552,7 +1483,7 @@ const String bottomUpGolden = '''
 
 ''';
 
-const String testTagRootedStackFrameStringGolden = '''
+const testTagRootedStackFrameStringGolden = '''
   TagA - children: 1 - excl: 0 - incl: 10
     A - children: 1 - excl: 0 - incl: 10
       B - children: 2 - excl: 0 - incl: 10
@@ -1565,7 +1496,7 @@ const String testTagRootedStackFrameStringGolden = '''
             C - children: 0 - excl: 1 - incl: 1
 ''';
 
-const String tagRootedBottomUpGolden = '''
+const tagRootedBottomUpGolden = '''
   TagA - children: 4 - excl: 0 - incl: 10
     C - children: 2 - excl: 4 - incl: 4
       B - children: 1 - excl: 2 - incl: 2
@@ -1592,16 +1523,17 @@ const String tagRootedBottomUpGolden = '''
 
 ''';
 
-final CpuProfileMetaData zeroProfileMetaData = CpuProfileMetaData(
+final zeroProfileMetaData = CpuProfileMetaData(
   sampleCount: 0,
   samplePeriod: 50,
   stackDepth: 128,
-  time: TimeRange()
-    ..start = const Duration()
-    ..end = const Duration(microseconds: 100),
+  time:
+      TimeRange()
+        ..start = const Duration()
+        ..end = const Duration(microseconds: 100),
 );
 
-final CpuStackFrame zeroStackFrame = CpuStackFrame(
+final zeroStackFrame = CpuStackFrame(
   id: 'id_0',
   name: 'A',
   verboseName: 'A',

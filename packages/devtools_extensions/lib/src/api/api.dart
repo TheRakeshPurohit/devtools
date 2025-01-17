@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'model.dart';
 
@@ -27,14 +27,24 @@ enum DevToolsExtensionEventType {
   /// the active DevTools theme (light or dark).
   themeUpdate(ExtensionEventDirection.toExtension),
 
-  /// An event that an extension will send to DevTools asking DevTools to post
+  /// An event that an extension can send to DevTools asking DevTools to post
   /// a notification to the DevTools global [notificationService].
   showNotification(ExtensionEventDirection.toDevTools),
 
-  /// An event that an extension will send to DevTools asking DevTools to post
-  /// a banner message to the extension's screen using the global
+  /// An event that an extension can send to DevTools asking DevTools to post
+  /// a banner message to the extension screen using the global
   /// [bannerMessages].
   showBannerMessage(ExtensionEventDirection.toDevTools),
+
+  /// An event that an extension can send to DevTools asking DevTools to copy
+  /// some content to the user's clipboard.
+  ///
+  /// It is preferred that extensions send this event to DevTools to copy text
+  /// instead of calling `Clipboard.setData` directly because DevTools contains
+  /// additional logic for copying text from within an IDE-embedded web view.
+  /// This scenario will occur when a user is using a DevTools extension from
+  /// within their IDE.
+  copyToClipboard(ExtensionEventDirection.toDevTools),
 
   /// Any unrecognized event that is not one of the above supported event types.
   unknown(ExtensionEventDirection.bidirectional);

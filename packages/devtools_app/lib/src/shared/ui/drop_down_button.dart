@@ -1,13 +1,12 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:collection/collection.dart';
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 
 import '../analytics/analytics.dart' as ga;
-import '../common_widgets.dart';
 
 /// A [DropDownButton] implementation that reports selection changes to our
 /// analytics.
@@ -64,7 +63,6 @@ class AnalyticsDropDownButton<T> extends StatelessWidget {
         child: RoundedDropDownButton<T>(
           isDense: isDense,
           isExpanded: isExpanded,
-          style: Theme.of(context).textTheme.bodyMedium,
           value: value,
           items: items?.map((e) => e.item).toList(),
           onChanged: _onChanged,

@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:convert';
 import 'dart:io';
@@ -10,11 +10,11 @@ import 'dart:io';
 
 /// Generates a dart file with a [Map] variable 'data' that contains the JSON
 /// data contained in the given json file (first argument).
-/// 
+///
 /// To use:
-/// 
+///
 /// `dart json_to_map.dart ~/path/to/my_file.json`
-/// 
+///
 /// This will generate a file with the same name but with a '.dart' extension
 /// instead of '.json' (e.g. ~/path/to/my_file.dart). This will be a valid dart
 /// file with a single [Map] variable [data].
@@ -30,23 +30,25 @@ void main(List<String> args) {
   }
 
   final jsonFileName = jsonFilePath.split('/').last;
-  final fileNameWithoutExtension =
-      (jsonFileName.split('.')..removeLast()).join('.');
-  final jsonFileDirectoryPath =
-      Uri.parse((jsonFilePath.split('/')..removeLast()).join('/'));
+  final fileNameWithoutExtension = (jsonFileName.split('.')
+    ..removeLast()).join('.');
+  final jsonFileDirectoryPath = Uri.parse(
+    (jsonFilePath.split('/')..removeLast()).join('/'),
+  );
 
-  final Map<String, Object?> jsonAsMap =
-      jsonDecode(jsonFile.readAsStringSync());
+  final Map<String, Object?> jsonAsMap = jsonDecode(
+    jsonFile.readAsStringSync(),
+  );
   var jsonFormattedString = JsonEncoder.withIndent('  ').convert(jsonAsMap);
 
   // Escape any '$' characters so that Dart does not think we are trying to do
   // String interpolation.
   jsonFormattedString = jsonFormattedString.replaceAll('\$', '\\\$');
 
-  final dartFile = File('$jsonFileDirectoryPath/$fileNameWithoutExtension.dart')
-    ..createSync()
-    ..writeAsStringSync(
-      '''
+  final dartFile =
+      File('$jsonFileDirectoryPath/$fileNameWithoutExtension.dart')
+        ..createSync()
+        ..writeAsStringSync('''
 // Copyright 2023 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -55,9 +57,8 @@ void main(List<String> args) {
 // ignore_for_file: prefer-trailing-comma
 // ignore_for_file: require_trailing_commas
 
-final Map<String, dynamic> data = <String, dynamic>$jsonFormattedString;
-''',
-    );
+final data = <String, Object?>$jsonFormattedString;
+''');
 
   print('Created ${dartFile.path}');
 }

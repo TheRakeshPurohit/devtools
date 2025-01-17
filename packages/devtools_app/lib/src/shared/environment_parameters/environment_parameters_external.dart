@@ -1,15 +1,15 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import '../../screens/debugger/codeview.dart';
 import '../analytics/constants.dart' as gac;
-import '../common_widgets.dart';
 import '../diagnostics/inspector_service.dart';
 import '../globals.dart';
-import '../utils.dart';
+import '../ui/common_widgets.dart';
+import '../utils/utils.dart';
 import 'environment_parameters_base.dart';
 
 class ExternalDevToolsEnvironmentParameters
@@ -19,14 +19,15 @@ class ExternalDevToolsEnvironmentParameters
       <ScriptPopupMenuOption>[];
 
   @override
-  Link issueTrackerLink({String? additionalInfo, String? issueTitle}) {
-    return Link(
+  GaLink issueTrackerLink({String? additionalInfo, String? issueTitle}) {
+    return GaLink(
       display: _newDevToolsIssueUriDisplay,
-      url: newDevToolsGitHubIssueUriLengthSafe(
-        additionalInfo: additionalInfo,
-        issueTitle: issueTitle,
-        environment: issueLinkDetails(),
-      ).toString(),
+      url:
+          newDevToolsGitHubIssueUriLengthSafe(
+            additionalInfo: additionalInfo,
+            issueTitle: issueTitle,
+            environment: issueLinkDetails(),
+          ).toString(),
       gaScreenName: gac.devToolsMain,
       gaSelectedItemDescription: gac.feedbackLink,
     );
@@ -39,7 +40,7 @@ class ExternalDevToolsEnvironmentParameters
   }
 
   @override
-  Link? enableSourceMapsLink() {
+  GaLink? enableSourceMapsLink() {
     // This should always return a null value for 3p users.
     return null;
   }
@@ -63,6 +64,30 @@ class ExternalDevToolsEnvironmentParameters
   String? chrome115BreakpointBug() {
     // This should always return a null value for 3p users.
     return null;
+  }
+
+  @override
+  List<TextSpan>? recommendedDebuggers(
+    BuildContext context, {
+    required bool isFlutterApp,
+  }) {
+    return [
+      GaLinkTextSpan(
+        context: context,
+        link: const GaLink(
+          display: 'VS Code',
+          url: 'https://dart.dev/tools/vs-code',
+        ),
+      ),
+      const TextSpan(text: ' or '),
+      GaLinkTextSpan(
+        context: context,
+        link: const GaLink(
+          display: 'IntelliJ & Android Studio',
+          url: 'https://dart.dev/tools/jetbrains-plugin',
+        ),
+      ),
+    ];
   }
 }
 
@@ -91,8 +116,10 @@ Uri newDevToolsGitHubIssueUriLengthSafe({
   }
 
   // Truncate the additional info if the URL is too long:
-  final truncatedInfo =
-      additionalInfo.substring(0, additionalInfo.length - lengthToCut);
+  final truncatedInfo = additionalInfo.substring(
+    0,
+    additionalInfo.length - lengthToCut,
+  );
 
   final truncatedUri = _newDevToolsGitHubIssueUri(
     additionalInfo: truncatedInfo,
@@ -113,10 +140,7 @@ Uri _newDevToolsGitHubIssueUri({
     ...environment,
   ].join('\n');
 
-  return Uri.parse('https://$_newDevToolsIssueUriDisplay').replace(
-    queryParameters: {
-      'title': issueTitle,
-      'body': issueBody,
-    },
-  );
+  return Uri.parse(
+    'https://$_newDevToolsIssueUriDisplay',
+  ).replace(queryParameters: {'title': issueTitle, 'body': issueBody});
 }

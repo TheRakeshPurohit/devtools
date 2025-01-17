@@ -1,27 +1,27 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:devtools_app_shared/utils.dart';
-import 'package:devtools_shared/devtools_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:vm_snapshot_analysis/precompiler_trace.dart';
 
 import '../../shared/analytics/analytics.dart' as ga;
 import '../../shared/analytics/constants.dart' as gac;
 import '../../shared/charts/treemap.dart';
-import '../../shared/common_widgets.dart';
 import '../../shared/config_specific/drag_and_drop/drag_and_drop.dart';
-import '../../shared/file_import.dart';
+import '../../shared/framework/screen.dart';
 import '../../shared/globals.dart';
+import '../../shared/primitives/query_parameters.dart';
 import '../../shared/primitives/utils.dart';
-import '../../shared/screen.dart';
 import '../../shared/server/server.dart' as server;
+import '../../shared/ui/common_widgets.dart';
+import '../../shared/ui/file_import.dart';
 import '../../shared/ui/tab.dart';
-import '../../shared/utils.dart';
+import '../../shared/utils/utils.dart';
 import 'app_size_controller.dart';
 import 'app_size_table.dart';
 import 'code_size_attribution.dart';
@@ -56,7 +56,7 @@ class AppSizeScreen extends Screen {
   String get docPageId => id;
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildScreenBody(BuildContext context) {
     // Since `handleDrop` is not specified for this [DragAndDrop] widget, drag
     // and drop events will be absorbed by it, meaning drag and drop actions
     // will be a no-op if they occur over this area. [DragAndDrop] widgets
@@ -103,14 +103,14 @@ class _AppSizeBodyState extends State<AppSizeBody>
   }
 
   Future<void> maybeLoadAppSizeFiles() async {
-    final queryParams = loadQueryParams();
-    final baseFilePath = queryParams[baseAppSizeFilePropertyName];
+    final queryParams = DevToolsQueryParams.load();
+    final baseFilePath = queryParams.appSizeBaseFilePath;
     if (baseFilePath != null) {
       // TODO(kenz): does this have to be in a setState()?
       _preLoadingData = true;
       final baseAppSizeFile = await server.requestBaseAppSizeFile(baseFilePath);
       DevToolsJsonFile? testAppSizeFile;
-      final testFilePath = queryParams[testAppSizeFilePropertyName];
+      final testFilePath = queryParams.appSizeTestFilePath;
       if (testFilePath != null) {
         testAppSizeFile = await server.requestTestAppSizeFile(testFilePath);
       }
@@ -147,7 +147,7 @@ class _AppSizeBodyState extends State<AppSizeBody>
   }
 
   void _pushErrorMessage(String error) {
-    if (mounted) notificationService.push(error);
+    if (mounted) notificationService.pushError(error);
   }
 
   @override
@@ -172,7 +172,7 @@ class _AppSizeBodyState extends State<AppSizeBody>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  devToolsExtensionPoints.loadingAppSizeDataMessage(),
+                  devToolsEnvironmentParameters.loadingAppSizeDataMessage(),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: defaultSpacing),
@@ -182,82 +182,125 @@ class _AppSizeBodyState extends State<AppSizeBody>
           );
         }
         final currentTab = tabs[_tabController.index];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: defaultButtonHeight,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TabBar(
-                    labelColor: Theme.of(context).textTheme.bodyLarge!.color,
-                    isScrollable: true,
-                    controller: _tabController,
-                    tabs: tabs,
-                  ),
-                  Row(
-                    children: [
-                      if (isDeferredApp) _buildAppUnitDropdown(currentTab.key!),
-                      if (currentTab.key == AppSizeScreen.diffTabKey) ...[
-                        const SizedBox(width: defaultSpacing),
-                        _buildDiffTreeTypeDropdown(),
-                      ],
-                      const SizedBox(width: defaultSpacing),
-                      _buildClearButton(currentTab.key!),
-                    ],
+        return RoundedOutlinedBorder(
+          clip: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AreaPaneHeader(
+                leftPadding: 0,
+                tall: true,
+                includeTopBorder: false,
+                roundedTopBorder: false,
+                title: TabBar(
+                  labelColor: Theme.of(context).regularTextStyle.color,
+                  isScrollable: true,
+                  controller: _tabController,
+                  tabs: tabs,
+                ),
+                actions: [
+                  if (isDeferredApp)
+                    AppUnitDropdown(
+                      value: controller.selectedAppUnit.value,
+                      onChanged: (newAppUnit) {
+                        setState(() {
+                          controller.changeSelectedAppUnit(
+                            newAppUnit!,
+                            currentTab.key!,
+                          );
+                        });
+                      },
+                    ),
+                  if (currentTab.key == AppSizeScreen.diffTabKey) ...[
+                    const SizedBox(width: defaultSpacing),
+                    DiffTreeTypeDropdown(
+                      value: controller.activeDiffTreeType.value,
+                      onChanged: (newDiffTreeType) {
+                        controller.changeActiveDiffTreeType(newDiffTreeType!);
+                      },
+                    ),
+                  ],
+                  const SizedBox(width: defaultSpacing),
+                  ClearButton(
+                    gaScreen: gac.appSize,
+                    gaSelection: gac.clear,
+                    onPressed: () => controller.clear(currentTab.key!),
                   ),
                 ],
               ),
-            ),
-            Expanded(
-              child: TabBarView(
-                physics: defaultTabBarViewPhysics,
-                controller: _tabController,
-                children: const [
-                  AnalysisView(),
-                  DiffView(),
-                ],
+              Expanded(
+                child: TabBarView(
+                  physics: defaultTabBarViewPhysics,
+                  controller: _tabController,
+                  children: const [AnalysisView(), DiffView()],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
+}
 
-  DropdownButtonHideUnderline _buildDiffTreeTypeDropdown() {
-    return DropdownButtonHideUnderline(
-      key: AppSizeScreen.diffTypeDropdownKey,
-      child: DropdownButton<DiffTreeType>(
-        value: controller.activeDiffTreeType.value,
-        items: [
-          _buildDiffTreeTypeMenuItem(DiffTreeType.combined),
-          _buildDiffTreeTypeMenuItem(DiffTreeType.increaseOnly),
-          _buildDiffTreeTypeMenuItem(DiffTreeType.decreaseOnly),
-        ],
-        onChanged: (newDiffTreeType) {
-          controller.changeActiveDiffTreeType(newDiffTreeType!);
-        },
-      ),
-    );
-  }
+class AppUnitDropdown extends StatelessWidget {
+  const AppUnitDropdown({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
 
-  DropdownButtonHideUnderline _buildAppUnitDropdown(Key tabKey) {
-    return DropdownButtonHideUnderline(
-      key: AppSizeScreen.appUnitDropdownKey,
-      child: DropdownButton<AppUnit>(
-        value: controller.selectedAppUnit.value,
+  final AppUnit value;
+  final ValueChanged<AppUnit?>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: defaultButtonHeight,
+      child: RoundedDropDownButton<AppUnit>(
+        key: AppSizeScreen.appUnitDropdownKey,
+        value: value,
         items: [
           _buildAppUnitMenuItem(AppUnit.entireApp),
           _buildAppUnitMenuItem(AppUnit.mainOnly),
           _buildAppUnitMenuItem(AppUnit.deferredOnly),
         ],
-        onChanged: (newAppUnit) {
-          setState(() {
-            controller.changeSelectedAppUnit(newAppUnit!, tabKey);
-          });
-        },
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  DropdownMenuItem<AppUnit> _buildAppUnitMenuItem(AppUnit appUnit) {
+    return DropdownMenuItem<AppUnit>(
+      value: appUnit,
+      child: Text(appUnit.display),
+    );
+  }
+}
+
+class DiffTreeTypeDropdown extends StatelessWidget {
+  const DiffTreeTypeDropdown({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final DiffTreeType value;
+  final ValueChanged<DiffTreeType?>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: defaultButtonHeight,
+      child: RoundedDropDownButton<DiffTreeType>(
+        key: AppSizeScreen.diffTypeDropdownKey,
+        isDense: true,
+        items: [
+          _buildDiffTreeTypeMenuItem(DiffTreeType.combined),
+          _buildDiffTreeTypeMenuItem(DiffTreeType.increaseOnly),
+          _buildDiffTreeTypeMenuItem(DiffTreeType.decreaseOnly),
+        ],
+        onChanged: onChanged,
       ),
     );
   }
@@ -270,21 +313,6 @@ class _AppSizeBodyState extends State<AppSizeBody>
       child: Text(diffTreeType.display),
     );
   }
-
-  DropdownMenuItem<AppUnit> _buildAppUnitMenuItem(AppUnit appUnit) {
-    return DropdownMenuItem<AppUnit>(
-      value: appUnit,
-      child: Text(appUnit.display),
-    );
-  }
-
-  Widget _buildClearButton(Key activeTabKey) {
-    return ClearButton(
-      gaScreen: gac.appSize,
-      gaSelection: gac.clear,
-      onPressed: () => controller.clear(activeTabKey),
-    );
-  }
 }
 
 class AnalysisView extends StatefulWidget {
@@ -292,7 +320,8 @@ class AnalysisView extends StatefulWidget {
 
   // TODO(kenz): add links to documentation on how to generate these files, and
   // mention the import file button once it is hooked up to a file picker.
-  static const importInstructions = 'Drag and drop an AOT snapshot or'
+  static const importInstructions =
+      'Drag and drop an AOT snapshot or'
       ' size analysis file for debugging';
 
   @override
@@ -327,19 +356,20 @@ class _AnalysisViewState extends State<AnalysisView>
     return Column(
       children: [
         Expanded(
-          child: analysisRootLocal == null
-              ? _buildImportFileView()
-              : _AppSizeView(
-                  title: _generateSingleFileHeaderText(),
-                  treemapKey: AppSizeScreen.analysisViewTreemapKey,
-                  treemapRoot: analysisRootLocal,
-                  onRootChangedCallback: controller.changeAnalysisRoot,
-                  analysisTable: AppSizeAnalysisTable(
-                    rootNode: analysisRootLocal.root,
-                    controller: controller,
+          child:
+              analysisRootLocal == null
+                  ? _buildImportFileView()
+                  : _AppSizeView(
+                    title: _generateSingleFileHeaderText(),
+                    treemapKey: AppSizeScreen.analysisViewTreemapKey,
+                    treemapRoot: analysisRootLocal,
+                    onRootChangedCallback: controller.changeAnalysisRoot,
+                    analysisTable: AppSizeAnalysisTable(
+                      rootNode: analysisRootLocal.root,
+                      controller: controller,
+                    ),
+                    callGraphRoot: controller.analysisCallGraphRoot.value,
                   ),
-                  callGraphRoot: controller.analysisCallGraphRoot.value,
-                ),
         ),
       ],
     );
@@ -347,9 +377,10 @@ class _AnalysisViewState extends State<AnalysisView>
 
   String _generateSingleFileHeaderText() {
     final analysisFile = controller.analysisJsonFile.value!;
-    String output = analysisFile.isAnalyzeSizeFile
-        ? 'Total size analysis: '
-        : 'Dart AOT snapshot: ';
+    String output =
+        analysisFile.isAnalyzeSizeFile
+            ? 'Total size analysis: '
+            : 'Dart AOT snapshot: ';
     output += analysisFile.displayText;
     return output;
   }
@@ -358,40 +389,29 @@ class _AnalysisViewState extends State<AnalysisView>
     return ValueListenableBuilder<bool>(
       valueListenable: controller.processingNotifier,
       builder: (context, processing, _) {
-        if (processing) {
-          return Center(
-            child: Text(
-              AppSizeScreen.loadingMessage,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Theme.of(context).textTheme.displayLarge!.color,
-              ),
-            ),
-          );
-        } else {
-          return Column(
-            children: [
-              Flexible(
-                child: FileImportContainer(
-                  title: 'Size analysis',
-                  instructions: AnalysisView.importInstructions,
-                  actionText: 'Analyze Size',
-                  gaScreen: gac.appSize,
-                  gaSelectionImport: gac.importFileSingle,
-                  gaSelectionAction: gac.analyzeSingle,
-                  onAction: (jsonFile) {
-                    controller.loadTreeFromJsonFile(
-                      jsonFile: jsonFile,
-                      onError: (error) {
-                        if (mounted) notificationService.push(error);
-                      },
-                    );
-                  },
+        return processing
+            ? const CenteredMessage(message: AppSizeScreen.loadingMessage)
+            : Column(
+              children: [
+                Flexible(
+                  child: FileImportContainer(
+                    instructions: AnalysisView.importInstructions,
+                    actionText: 'Analyze Size',
+                    gaScreen: gac.appSize,
+                    gaSelectionImport: gac.importFileSingle,
+                    gaSelectionAction: gac.analyzeSingle,
+                    onAction: (jsonFile) {
+                      controller.loadTreeFromJsonFile(
+                        jsonFile: jsonFile,
+                        onError: (error) {
+                          if (mounted) notificationService.push(error);
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
-          );
-        }
+              ],
+            );
       },
     );
   }
@@ -402,9 +422,11 @@ class DiffView extends StatefulWidget {
 
   // TODO(kenz): add links to documentation on how to generate these files, and
   // mention the import file button once it is hooked up to a file picker.
-  static const importOldInstructions = 'Drag and drop an original (old) AOT '
+  static const importOldInstructions =
+      'Drag and drop an original (old) AOT '
       'snapshot or size analysis file for debugging';
-  static const importNewInstructions = 'Drag and drop a modified (new) AOT '
+  static const importNewInstructions =
+      'Drag and drop a modified (new) AOT '
       'snapshot or size analysis file for debugging';
 
   @override
@@ -441,16 +463,17 @@ class _DiffViewState extends State<DiffView>
     return Column(
       children: [
         Expanded(
-          child: diffRootLocal == null
-              ? _buildImportDiffView()
-              : _AppSizeView(
-                  title: _generateDualFileHeaderText(),
-                  treemapKey: AppSizeScreen.diffViewTreemapKey,
-                  treemapRoot: diffRootLocal,
-                  onRootChangedCallback: controller.changeDiffRoot,
-                  analysisTable: AppSizeDiffTable(rootNode: diffRootLocal),
-                  callGraphRoot: controller.diffCallGraphRoot.value,
-                ),
+          child:
+              diffRootLocal == null
+                  ? _buildImportDiffView()
+                  : _AppSizeView(
+                    title: _generateDualFileHeaderText(),
+                    treemapKey: AppSizeScreen.diffViewTreemapKey,
+                    treemapRoot: diffRootLocal,
+                    onRootChangedCallback: controller.changeDiffRoot,
+                    analysisTable: AppSizeDiffTable(rootNode: diffRootLocal),
+                    callGraphRoot: controller.diffCallGraphRoot.value,
+                  ),
         ),
       ],
     );
@@ -460,9 +483,10 @@ class _DiffViewState extends State<DiffView>
     final oldFile = controller.oldDiffJsonFile.value!;
     final newFile = controller.newDiffJsonFile.value!;
     String output = 'Diffing ';
-    output += oldFile.isAnalyzeSizeFile
-        ? 'total size analyses: '
-        : 'Dart AOT snapshots: ';
+    output +=
+        oldFile.isAnalyzeSizeFile
+            ? 'total size analyses: '
+            : 'Dart AOT snapshots: ';
     output += oldFile.displayText;
     output += ' (OLD)    vs    (NEW) ';
     output += newFile.displayText;
@@ -473,48 +497,35 @@ class _DiffViewState extends State<DiffView>
     return ValueListenableBuilder<bool>(
       valueListenable: controller.processingNotifier,
       builder: (context, processing, _) {
-        if (processing) {
-          return _buildLoadingMessage();
-        } else {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: DualFileImportContainer(
-                  firstFileTitle: 'Old',
-                  secondFileTitle: 'New',
-                  // TODO(kenz): perhaps bold "original" and "modified".
-                  firstInstructions: DiffView.importOldInstructions,
-                  secondInstructions: DiffView.importNewInstructions,
-                  actionText: 'Analyze Diff',
-                  gaScreen: gac.appSize,
-                  gaSelectionImportFirst: gac.importFileDiffFirst,
-                  gaSelectionImportSecond: gac.importFileDiffSecond,
-                  gaSelectionAction: gac.analyzeDiff,
-                  onAction: (oldFile, newFile, onError) =>
-                      controller.loadDiffTreeFromJsonFiles(
-                    oldFile: oldFile,
-                    newFile: newFile,
-                    onError: onError,
+        return processing
+            ? const CenteredMessage(message: AppSizeScreen.loadingMessage)
+            : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: DualFileImportContainer(
+                    firstFileTitle: 'Old',
+                    secondFileTitle: 'New',
+                    // TODO(kenz): perhaps bold "original" and "modified".
+                    firstInstructions: DiffView.importOldInstructions,
+                    secondInstructions: DiffView.importNewInstructions,
+                    actionText: 'Analyze Diff',
+                    gaScreen: gac.appSize,
+                    gaSelectionImportFirst: gac.importFileDiffFirst,
+                    gaSelectionImportSecond: gac.importFileDiffSecond,
+                    gaSelectionAction: gac.analyzeDiff,
+                    onAction:
+                        (oldFile, newFile, onError) =>
+                            controller.loadDiffTreeFromJsonFiles(
+                              oldFile: oldFile,
+                              newFile: newFile,
+                              onError: onError,
+                            ),
                   ),
                 ),
-              ),
-            ],
-          );
-        }
+              ],
+            );
       },
-    );
-  }
-
-  Widget _buildLoadingMessage() {
-    return Center(
-      child: Text(
-        AppSizeScreen.loadingMessage,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Theme.of(context).textTheme.displayLarge!.color,
-        ),
-      ),
     );
   }
 }
@@ -535,7 +546,7 @@ class _AppSizeView extends StatelessWidget {
 
   final TreemapNode treemapRoot;
 
-  final Function(TreemapNode?) onRootChangedCallback;
+  final void Function(TreemapNode?) onRootChangedCallback;
 
   final Widget analysisTable;
 
@@ -556,7 +567,7 @@ class _AppSizeView extends StatelessWidget {
               includeTopBorder: false,
             ),
             Expanded(
-              child: Split(
+              child: SplitPane(
                 axis: Axis.vertical,
                 initialFractions: const [
                   initialFractionForTreemap,
@@ -579,9 +590,7 @@ class _AppSizeView extends StatelessWidget {
                   OutlineDecoration.onlyTop(
                     child: Row(
                       children: [
-                        Flexible(
-                          child: analysisTable,
-                        ),
+                        Flexible(child: analysisTable),
                         if (callGraphRoot != null)
                           Flexible(
                             child: OutlineDecoration.onlyLeft(

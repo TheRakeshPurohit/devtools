@@ -1,10 +1,9 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:math' as math;
 
-import '../../../../shared/primitives/trace_event.dart';
 import '../../../../shared/primitives/utils.dart';
 import '../../performance_model.dart';
 import '../controls/enhance_tracing/enhance_tracing_model.dart';
@@ -24,18 +23,20 @@ class FlutterFrame {
     required this.vsyncOverheadTime,
   });
 
-  factory FlutterFrame.parse(Map<String, dynamic> json) {
-    final timeStart = Duration(microseconds: json[startTimeKey]!);
-    final timeEnd = timeStart + Duration(microseconds: json[elapsedKey]!);
-    final frameTime = TimeRange()
-      ..start = timeStart
-      ..end = timeEnd;
+  factory FlutterFrame.fromJson(Map<String, Object?> json) {
+    final timeStart = Duration(microseconds: json[startTimeKey]! as int);
+    final timeEnd =
+        timeStart + Duration(microseconds: json[elapsedKey]! as int);
+    final frameTime =
+        TimeRange()
+          ..start = timeStart
+          ..end = timeEnd;
     return FlutterFrame._(
-      id: json[numberKey]!,
+      id: json[numberKey]! as int,
       timeFromFrameTiming: frameTime,
-      buildTime: Duration(microseconds: json[buildKey]!),
-      rasterTime: Duration(microseconds: json[rasterKey]!),
-      vsyncOverheadTime: Duration(microseconds: json[vsyncOverheadKey]!),
+      buildTime: Duration(microseconds: json[buildKey]! as int),
+      rasterTime: Duration(microseconds: json[rasterKey]! as int),
+      vsyncOverheadTime: Duration(microseconds: json[vsyncOverheadKey]! as int),
     );
   }
 
@@ -56,9 +57,6 @@ class FlutterFrame {
 
   /// The time range of the Flutter frame based on the FrameTiming API from
   /// which the data was parsed.
-  ///
-  /// This will not match the timestamps on the VM timeline. For activities
-  /// involving the VM timeline, use [timeFromEventFlows] instead.
   final TimeRange timeFromFrameTiming;
 
   /// The time range of the Flutter frame based on the frame's
@@ -82,7 +80,7 @@ class FlutterFrame {
   final Duration vsyncOverheadTime;
 
   /// Timeline event data for this [FlutterFrame].
-  final FrameTimelineEventData timelineEventData = FrameTimelineEventData();
+  final timelineEventData = FrameTimelineEventData();
 
   /// The [EnhanceTracingState] at the time that this frame object was created
   /// (e.g. when the 'Flutter.Frame' event for this frame was received).
@@ -110,8 +108,10 @@ class FlutterFrame {
     if (timelineEventData.rasterEvent == null) return Duration.zero;
     final shaderEvents = timelineEventData.rasterEvent!
         .shallowNodesWithCondition((event) => event.isShaderEvent);
-    final duration =
-        shaderEvents.fold<Duration>(Duration.zero, (previous, event) {
+    final duration = shaderEvents.fold<Duration>(Duration.zero, (
+      previous,
+      event,
+    ) {
       return previous + event.time.duration;
     });
     return _shaderTime = duration;
@@ -122,10 +122,8 @@ class FlutterFrame {
   bool get hasShaderTime =>
       timelineEventData.rasterEvent != null && shaderDuration != Duration.zero;
 
-  void setEventFlow(SyncTimelineEvent event, {TimelineEventType? type}) {
-    type ??= event.type;
-    timelineEventData.setEventFlow(event: event, type: type);
-    event.frameId = id;
+  void setEventFlow(FlutterTimelineEvent event) {
+    timelineEventData.setEventFlow(event: event);
   }
 
   bool isJanky(double displayRefreshRate) {
@@ -151,14 +149,14 @@ class FlutterFrame {
     return 1 / displayRefreshRate * 1000;
   }
 
-  Map<String, dynamic> get json => {
-        numberKey: id,
-        startTimeKey: timeFromFrameTiming.start!.inMicroseconds,
-        elapsedKey: timeFromFrameTiming.duration.inMicroseconds,
-        buildKey: buildTime.inMicroseconds,
-        rasterKey: rasterTime.inMicroseconds,
-        vsyncOverheadKey: vsyncOverheadTime.inMicroseconds,
-      };
+  Map<String, Object?> get json => {
+    numberKey: id,
+    startTimeKey: timeFromFrameTiming.start!.inMicroseconds,
+    elapsedKey: timeFromFrameTiming.duration.inMicroseconds,
+    buildKey: buildTime.inMicroseconds,
+    rasterKey: rasterTime.inMicroseconds,
+    vsyncOverheadKey: vsyncOverheadTime.inMicroseconds,
+  };
 
   @override
   String toString() {
@@ -167,20 +165,34 @@ class FlutterFrame {
         'raster: ${timelineEventData.rasterEvent?.time}';
   }
 
+  String toStringVerbose() {
+    final buf = StringBuffer();
+    buf.writeln('UI timeline event for frame $id:');
+    timelineEventData.uiEvent?.format(buf, '  ');
+    buf.writeln('\nUI trace for frame $id');
+    timelineEventData.uiEvent?.writeTrackEventsToBuffer(buf);
+    buf.writeln('\nRaster timeline event frame $id:');
+    timelineEventData.rasterEvent?.format(buf, '  ');
+    buf.writeln('\nRaster trace for frame $id');
+    timelineEventData.rasterEvent?.writeTrackEventsToBuffer(buf);
+    return buf.toString();
+  }
+
   FlutterFrame shallowCopy() {
-    return FlutterFrame.parse(json);
+    return FlutterFrame.fromJson(json);
   }
 }
 
 class FrameTimelineEventData {
   /// Events describing the UI work for a [FlutterFrame].
-  SyncTimelineEvent? get uiEvent => _eventFlows[TimelineEventType.ui.index];
+  FlutterTimelineEvent? get uiEvent => _eventFlows[TimelineEventType.ui.index];
 
   /// Events describing the Raster work for a [FlutterFrame].
-  SyncTimelineEvent? get rasterEvent =>
+  FlutterTimelineEvent? get rasterEvent =>
       _eventFlows[TimelineEventType.raster.index];
 
-  final List<SyncTimelineEvent?> _eventFlows = List.generate(2, (_) => null);
+  // ignore: avoid-explicit-type-declaration, necessary here.
+  final List<FlutterTimelineEvent?> _eventFlows = List.generate(2, (_) => null);
 
   bool get wellFormed => uiEvent != null && rasterEvent != null;
 
@@ -189,10 +201,10 @@ class FrameTimelineEventData {
   final time = TimeRange();
 
   void setEventFlow({
-    required SyncTimelineEvent event,
-    required TimelineEventType type,
+    required FlutterTimelineEvent event,
     bool setTimeData = true,
   }) {
+    final type = event.type!;
     _eventFlows[type.index] = event;
     if (setTimeData) {
       if (type == TimelineEventType.ui) {
@@ -224,7 +236,7 @@ class FrameTimelineEventData {
     }
   }
 
-  SyncTimelineEvent? eventByType(TimelineEventType type) {
+  FlutterTimelineEvent? eventByType(TimelineEventType type) {
     if (type == TimelineEventType.ui) return uiEvent;
     if (type == TimelineEventType.raster) return rasterEvent;
     return null;

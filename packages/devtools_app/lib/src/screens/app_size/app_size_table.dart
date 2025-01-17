@@ -1,11 +1,12 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../shared/charts/treemap.dart';
+import '../../shared/primitives/byte_utils.dart';
 import '../../shared/primitives/utils.dart';
 import '../../shared/table/table.dart';
 import '../../shared/table/table_data.dart';
@@ -18,18 +19,20 @@ class AppSizeAnalysisTable extends StatelessWidget {
     required AppSizeController controller,
   }) {
     final treeColumn = _NameColumn(
-      currentRootLevel: controller.isDeferredApp.value
-          ? rootNode.children.first.level
-          : rootNode.level,
+      currentRootLevel:
+          controller.isDeferredApp.value
+              ? rootNode.children.first.level
+              : rootNode.level,
     );
     final sizeColumn = _SizeColumn();
     final columns = List<ColumnData<TreemapNode>>.unmodifiable([
       treeColumn,
       sizeColumn,
       _SizePercentageColumn(
-        totalSize: controller.isDeferredApp.value
-            ? rootNode.children[0].root.byteSize
-            : rootNode.root.byteSize,
+        totalSize:
+            controller.isDeferredApp.value
+                ? rootNode.children[0].root.byteSize
+                : rootNode.root.byteSize,
       ),
     ]);
 
@@ -87,11 +90,7 @@ class _NameColumn extends TreeColumnData<TreemapNode> {
   String? getCaption(TreemapNode dataObject) => dataObject.caption;
 
   @override
-  bool get supportsSorting => true;
-
-  @override
-  String getTooltip(TreemapNode dataObject) =>
-      dataObject.displayText().toPlainText();
+  String getTooltip(TreemapNode dataObject) => dataObject.displayText();
 
   @override
   double getNodeIndentPx(TreemapNode dataObject) {
@@ -102,42 +101,35 @@ class _NameColumn extends TreeColumnData<TreemapNode> {
 
 class _SizeColumn extends ColumnData<TreemapNode> {
   _SizeColumn()
-      : super(
-          'Size',
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(100.0),
-        );
+    : super(
+        'Size',
+        alignment: ColumnAlignment.right,
+        fixedWidthPx: scaleByFontFactor(100.0),
+      );
 
   @override
   Comparable getValue(TreemapNode dataObject) => dataObject.byteSize;
 
   @override
   String getDisplayValue(TreemapNode dataObject) {
-    return prettyPrintBytes(
-      dataObject.byteSize,
-      kbFractionDigits: 1,
-      includeUnit: true,
-    )!;
+    return prettyPrintBytes(dataObject.byteSize, includeUnit: true)!;
   }
 
   @override
-  bool get supportsSorting => true;
-
-  @override
   int compare(TreemapNode a, TreemapNode b) {
-    final Comparable valueA = getValue(a);
-    final Comparable valueB = getValue(b);
+    final valueA = getValue(a);
+    final valueB = getValue(b);
     return valueA.compareTo(valueB);
   }
 }
 
 class _SizePercentageColumn extends ColumnData<TreemapNode> {
   _SizePercentageColumn({required this.totalSize})
-      : super(
-          '% of Total Size',
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(100.0),
-        );
+    : super(
+        '% of Total Size',
+        alignment: ColumnAlignment.right,
+        fixedWidthPx: scaleByFontFactor(100.0),
+      );
 
   final int totalSize;
 
@@ -150,12 +142,9 @@ class _SizePercentageColumn extends ColumnData<TreemapNode> {
       '${getValue(dataObject).toStringAsFixed(2)} %';
 
   @override
-  bool get supportsSorting => true;
-
-  @override
   int compare(TreemapNode a, TreemapNode b) {
-    final Comparable valueA = getValue(a);
-    final Comparable valueB = getValue(b);
+    final valueA = getValue(a);
+    final valueB = getValue(b);
     return valueA.compareTo(valueB);
   }
 }
@@ -169,12 +158,7 @@ class AppSizeDiffTable extends StatelessWidget {
       diffColumn,
     ]);
 
-    return AppSizeDiffTable._(
-      rootNode,
-      treeColumn,
-      diffColumn,
-      columns,
-    );
+    return AppSizeDiffTable._(rootNode, treeColumn, diffColumn, columns);
   }
 
   const AppSizeDiffTable._(
@@ -211,27 +195,24 @@ class AppSizeDiffTable extends StatelessWidget {
 //                   other columns.
 class _DiffColumn extends ColumnData<TreemapNode> {
   _DiffColumn()
-      : super(
-          'Change',
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(100.0),
-        );
+    : super(
+        'Change',
+        alignment: ColumnAlignment.right,
+        fixedWidthPx: scaleByFontFactor(100.0),
+      );
 
   // Ensure sort by absolute size.
   @override
   int getValue(TreemapNode dataObject) => dataObject.unsignedByteSize;
 
-// TODO(peterdjlee): Add up or down arrows indicating increase or decrease for display value.
+  // TODO(peterdjlee): Add up or down arrows indicating increase or decrease for display value.
   @override
   String getDisplayValue(TreemapNode dataObject) => dataObject.prettyByteSize();
 
   @override
-  bool get supportsSorting => true;
-
-  @override
   int compare(TreemapNode a, TreemapNode b) {
-    final Comparable valueA = getValue(a);
-    final Comparable valueB = getValue(b);
+    final valueA = getValue(a);
+    final valueB = getValue(b);
     return valueA.compareTo(valueB);
   }
 

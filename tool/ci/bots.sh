@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Copyright 2018 The Chromium Authors. All rights reserved.
+# Copyright 2018 The Flutter Authors
 # Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
+# found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 # Fast fail the script on failures.
 set -ex
@@ -21,13 +21,13 @@ if [ "$BOT" = "main" ]; then
     $(dirname $(which flutter))/dart format --output=none --set-exit-if-changed .
 
     # Make sure the app versions are in sync.
-    devtools_tool repo-check
+    dt repo-check
 
     # Get packages
-    devtools_tool pub-get
+    dt pub-get
 
     # Analyze the code
-    devtools_tool analyze
+    dt analyze
 
 elif [ "$BOT" = "build_ddc" ]; then
 
@@ -74,12 +74,12 @@ elif [ "$BOT" = "integration_dart2js" ]; then
         flutter pub get
 
         # TODO(https://github.com/flutter/flutter/issues/118470): remove this warning.
-        echo "Preparing to run integration tests.\nWarning: if you see the exception \
-    'Web Driver Command WebDriverCommandType.screenshot failed while waiting for driver side', \
-    this is a known issue and likely means that the golden image check failed (see \
-    https://github.com/flutter/flutter/issues/118470). Run the test locally to see if new \
-    images under a 'failures/' directory are created as a result of the test run:\n\
-    $ dart run integration_test/run_tests.dart --headless"
+        echo "Preparing to run integration tests. Warning: if you see the exception \
+'Web Driver Command WebDriverCommandType.screenshot failed while waiting for driver side', \
+this is a known issue and likely means that the golden image check failed (see \
+https://github.com/flutter/flutter/issues/118470). Look at the summary of the Github Actions \
+run to see if golden image failures have been uploaded (this only happens once all checks have \
+completed). Download these goldens and update them in the codebase to apply the updates."
 
         if [ "$DEVICE" = "flutter" ]; then
             dart run integration_test/run_tests.dart --headless --shard="$SHARD"

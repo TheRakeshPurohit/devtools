@@ -1,6 +1,6 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be found
-// in the LICENSE file.
+// Copyright 2017 The Flutter Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 /// Platform independent definition of icons.
 ///
@@ -75,33 +75,21 @@ class CircleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Subtract 1 for a little bit of fixed padding
-      // around the icon relative to the default size.
-      // TODO(jacobr): consider switching this to padding.
-      width: defaultIconSize - 1,
-      height: defaultIconSize - 1,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      width: defaultIconSize,
+      height: defaultIconSize,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       alignment: Alignment.center,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 1),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: scaleByFontFactor(9.0),
-            color: textColor,
-          ),
-        ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: scaleByFontFactor(9.0), color: textColor),
       ),
     );
   }
 }
 
 class CustomIconMaker {
-  final Map<String, Widget> iconCache = {};
+  final iconCache = <String, Widget>{};
 
   Widget? getCustomIcon(
     String fromText, {
@@ -113,8 +101,8 @@ class CustomIconMaker {
       return null;
     }
 
-    final String text = fromText[0].toUpperCase();
-    final String mapKey = '${text}_${theKind.name}_$isAbstract';
+    final text = fromText[0].toUpperCase();
+    final mapKey = '${text}_${theKind.name}_$isAbstract';
     return iconCache.putIfAbsent(mapKey, () {
       return CustomIcon(kind: theKind, text: text, isAbstract: isAbstract);
     });
@@ -160,7 +148,7 @@ class CustomIconMaker {
 
 class IconKind {
   const IconKind(this.name, this.icon, [AssetImageIcon? abstractIcon])
-      : abstractIcon = abstractIcon ?? icon;
+    : abstractIcon = abstractIcon ?? icon;
 
   static IconKind classIcon = const IconKind(
     'class',
@@ -210,7 +198,7 @@ class ColorIcon extends StatelessWidget {
 }
 
 class ColorIconMaker {
-  final Map<Color, ColorIcon> iconCache = {};
+  final iconCache = <Color, ColorIcon>{};
 
   ColorIcon getCustomIcon(Color color) {
     return iconCache.putIfAbsent(color, () => ColorIcon(color));
@@ -223,7 +211,7 @@ class _ColorIconPainter extends CustomPainter {
   final Color color;
 
   final ColorScheme colorScheme;
-  static const double iconMargin = 1;
+  static const iconMargin = 1.0;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -244,7 +232,7 @@ class _ColorIconPainter extends CustomPainter {
           size.width - iconMargin,
           size.height - iconMargin,
         ),
-        Paint()..color = colorScheme.background,
+        Paint()..color = colorScheme.surface,
       )
       ..drawRect(
         Rect.fromLTRB(
@@ -264,10 +252,7 @@ class _ColorIconPainter extends CustomPainter {
         ),
         greyPaint,
       )
-      ..drawRect(
-        iconRect,
-        Paint()..color = color,
-      )
+      ..drawRect(iconRect, Paint()..color = color)
       ..drawRect(
         iconRect,
         Paint()
@@ -289,44 +274,20 @@ class FlutterMaterialIcons {
   FlutterMaterialIcons._();
 
   static Icon getIconForCodePoint(int charCode, ColorScheme colorScheme) {
-    return Icon(IconData(charCode), color: colorScheme.onPrimary);
-  }
-}
-
-class AssetImageIcon extends StatelessWidget {
-  const AssetImageIcon({
-    super.key,
-    required this.asset,
-    double? height,
-    double? width,
-  })  : _width = width,
-        _height = height;
-
-  final String asset;
-  final double? _height;
-  final double? _width;
-
-  double get width => _width ?? defaultIconSize;
-  double get height => _height ?? defaultIconSize;
-
-  @override
-  Widget build(BuildContext context) {
-    return Image(
-      image: AssetImage(asset),
-      height: height,
-      width: width,
-      fit: BoxFit.fill,
+    return Icon(
+      IconData(charCode, fontFamily: 'MaterialIcons'),
+      color: colorScheme.onSurface,
     );
   }
 }
 
 class Octicons {
-  static const IconData bug = IconData(61714, fontFamily: 'Octicons');
-  static const IconData info = IconData(61778, fontFamily: 'Octicons');
-  static const IconData deviceMobile = IconData(61739, fontFamily: 'Octicons');
-  static const IconData fileZip = IconData(61757, fontFamily: 'Octicons');
-  static const IconData clippy = IconData(61724, fontFamily: 'Octicons');
-  static const IconData package = IconData(61812, fontFamily: 'Octicons');
-  static const IconData dashboard = IconData(61733, fontFamily: 'Octicons');
-  static const IconData pulse = IconData(61823, fontFamily: 'Octicons');
+  static const bug = IconData(61714, fontFamily: 'Octicons');
+  static const info = IconData(61778, fontFamily: 'Octicons');
+  static const deviceMobile = IconData(61739, fontFamily: 'Octicons');
+  static const fileZip = IconData(61757, fontFamily: 'Octicons');
+  static const clippy = IconData(61724, fontFamily: 'Octicons');
+  static const package = IconData(61812, fontFamily: 'Octicons');
+  static const dashboard = IconData(61733, fontFamily: 'Octicons');
+  static const pulse = IconData(61823, fontFamily: 'Octicons');
 }

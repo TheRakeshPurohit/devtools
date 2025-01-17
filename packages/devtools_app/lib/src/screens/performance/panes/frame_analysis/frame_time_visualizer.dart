@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:math' as math;
 
@@ -13,10 +13,7 @@ import '../../../../shared/ui/utils.dart';
 import 'frame_analysis_model.dart';
 
 class FrameTimeVisualizer extends StatefulWidget {
-  const FrameTimeVisualizer({
-    Key? key,
-    required this.frameAnalysis,
-  }) : super(key: key);
+  const FrameTimeVisualizer({super.key, required this.frameAnalysis});
 
   final FrameAnalysis frameAnalysis;
 
@@ -52,7 +49,7 @@ class _FrameTimeVisualizerState extends State<FrameTimeVisualizer> {
 }
 
 class _UiPhases extends StatelessWidget {
-  const _UiPhases({Key? key, required this.frameAnalysis}) : super(key: key);
+  const _UiPhases({required this.frameAnalysis});
 
   final FrameAnalysis frameAnalysis;
 
@@ -93,8 +90,7 @@ class _UiPhases extends StatelessWidget {
 }
 
 class _RasterPhases extends StatelessWidget {
-  const _RasterPhases({Key? key, required this.frameAnalysis})
-      : super(key: key);
+  const _RasterPhases({required this.frameAnalysis});
 
   final FrameAnalysis frameAnalysis;
 
@@ -140,11 +136,10 @@ class _RasterPhases extends StatelessWidget {
 
 class _FrameBlockGroup extends StatelessWidget {
   const _FrameBlockGroup({
-    Key? key,
     required this.title,
     required this.data,
     required this.hasData,
-  }) : super(key: key);
+  });
 
   final String title;
 
@@ -156,12 +151,16 @@ class _FrameBlockGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget content;
     if (hasData) {
-      final totalFlex =
-          data.fold<int>(0, (current, block) => current + block.flex);
+      final totalFlex = data.fold<int>(
+        0,
+        (current, block) => current + block.flex,
+      );
       content = LayoutBuilder(
         builder: (context, constraints) {
-          final adjustedBlockWidths =
-              adjustedWidthsForBlocks(constraints, totalFlex);
+          final adjustedBlockWidths = adjustedWidthsForBlocks(
+            constraints,
+            totalFlex,
+          );
           return Row(
             children: [
               for (var i = 0; i < data.length; i++)
@@ -179,11 +178,7 @@ class _FrameBlockGroup extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title),
-        const SizedBox(height: denseSpacing),
-        content,
-      ],
+      children: [Text(title), const SizedBox(height: denseSpacing), content],
     );
   }
 
@@ -196,11 +191,12 @@ class _FrameBlockGroup extends StatelessWidget {
     BoxConstraints constraints,
     int totalFlex,
   ) {
-    final unadjustedBlockWidths = data
-        .map(
-          (blockData) => constraints.maxWidth * blockData.flex / totalFlex,
-        )
-        .toList();
+    final unadjustedBlockWidths =
+        data
+            .map(
+              (blockData) => constraints.maxWidth * blockData.flex / totalFlex,
+            )
+            .toList();
 
     var adjustment = 0.0;
     var widestBlockIndex = 0;
@@ -215,11 +211,13 @@ class _FrameBlockGroup extends StatelessWidget {
       }
     }
 
-    final adjustedBlockWidths = unadjustedBlockWidths
-        .map(
-          (blockWidth) => math.max(blockWidth, _FramePhaseBlock.minBlockWidth),
-        )
-        .toList();
+    final adjustedBlockWidths =
+        unadjustedBlockWidths
+            .map(
+              (blockWidth) =>
+                  math.max(blockWidth, _FramePhaseBlock.minBlockWidth),
+            )
+            .toList();
     final widest = adjustedBlockWidths[widestBlockIndex];
     adjustedBlockWidths[widestBlockIndex] = math.max(
       widest - adjustment,
@@ -231,13 +229,9 @@ class _FrameBlockGroup extends StatelessWidget {
 }
 
 class _FramePhaseBlock extends StatelessWidget {
-  const _FramePhaseBlock({
-    Key? key,
-    required this.blockData,
-    required this.width,
-  }) : super(key: key);
+  const _FramePhaseBlock({required this.blockData, required this.width});
 
-  static const _height = 30.0;
+  static const _height = 24.0;
 
   static const minBlockWidth = defaultIconSizeBeforeScaling + densePadding * 8;
 
@@ -266,7 +260,8 @@ class _FramePhaseBlock extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: densePadding),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final minWidthForText = defaultIconSize +
+            final minWidthForText =
+                defaultIconSize +
                 densePadding * 2 +
                 denseSpacing +
                 calculateTextSpanWidth(TextSpan(text: blockData.display));
@@ -277,16 +272,10 @@ class _FramePhaseBlock extends StatelessWidget {
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  blockData.icon,
-                  size: defaultIconSize,
-                ),
+                Icon(blockData.icon, size: defaultIconSize),
                 if (includeText) ...[
                   const SizedBox(width: denseSpacing),
-                  Text(
-                    blockData.display,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(blockData.display, overflow: TextOverflow.ellipsis),
                 ],
               ],
             );
@@ -314,13 +303,14 @@ class _FramePhaseBlockData {
   final IconData icon;
 
   String get display {
-    final text = duration != Duration.zero
-        ? durationText(
-            duration,
-            unit: DurationDisplayUnit.milliseconds,
-            allowRoundingToZero: false,
-          )
-        : '--';
+    final text =
+        duration != Duration.zero
+            ? durationText(
+              duration,
+              unit: DurationDisplayUnit.milliseconds,
+              allowRoundingToZero: false,
+            )
+            : '--';
     return '$title - $text';
   }
 }

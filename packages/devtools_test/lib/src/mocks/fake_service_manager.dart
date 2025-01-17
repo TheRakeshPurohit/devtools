@@ -1,6 +1,6 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:collection';
@@ -33,18 +33,19 @@ class FakeServiceConnectionManager extends Fake
   }) {
     _serviceManager = FakeServiceManager(
       service: service,
-      hasConnection: hasConnection,
       connectedAppInitialized: connectedAppInitialized,
+      hasConnection: hasConnection,
       availableLibraries: availableLibraries,
       availableServices: availableServices,
       rootLibrary: rootLibrary,
     );
-    for (var screenId in screenIds) {
+    for (final screenId in screenIds) {
       when(errorBadgeManager.erroredItemsForPage(screenId)).thenReturn(
         FixedValueListenable(LinkedHashMap<String, DevToolsError>()),
       );
-      when(errorBadgeManager.errorCountNotifier(screenId))
-          .thenReturn(ValueNotifier<int>(0));
+      when(
+        errorBadgeManager.errorCountNotifier(screenId),
+      ).thenReturn(ValueNotifier<int>(0));
     }
   }
 
@@ -54,20 +55,19 @@ class FakeServiceConnectionManager extends Fake
   late final ServiceManager<VmServiceWrapper> _serviceManager;
 
   @override
-  late final AppState appState =
-      AppState(serviceManager.isolateManager.selectedIsolate);
+  late final appState = AppState(serviceManager.isolateManager.selectedIsolate);
 
   @override
-  final ConsoleService consoleService = ConsoleService();
+  final consoleService = ConsoleService();
 
   @override
   final errorBadgeManager = MockErrorBadgeManager();
 
   @override
-  final InspectorService inspectorService = FakeInspectorService();
+  final inspectorService = FakeInspectorService();
 
   @override
-  final TimelineStreamManager timelineStreamManager = TimelineStreamManager();
+  final timelineStreamManager = TimelineStreamManager();
 
   @override
   VmFlagManager get vmFlagManager => FakeServiceManager._flagManager;
@@ -76,26 +76,12 @@ class FakeServiceConnectionManager extends Fake
   Future<double> get queryDisplayRefreshRate => Future.value(60.0);
 
   @override
-  Future<Response> get rasterCacheMetrics => Future.value(
-        Response.parse({
-          'layerBytes': 0,
-          'pictureBytes': 0,
-        })!,
-      );
+  Future<Response> get rasterCacheMetrics =>
+      Future.value(Response.parse({'layerBytes': 0, 'pictureBytes': 0})!);
 
   @override
-  Future<void> sendDwdsEvent({
-    required String screen,
-    required String action,
-  }) {
+  Future<void> sendDwdsEvent({required String screen, required String action}) {
     return Future.value();
-  }
-
-  @override
-  Future<String?> rootLibraryForMainIsolate() {
-    final fakeIsolateManager =
-        _serviceManager.isolateManager as FakeIsolateManager;
-    return Future.value(fakeIsolateManager.rootLibrary);
   }
 }
 
@@ -104,30 +90,32 @@ class FakeServiceManager extends Fake
     implements ServiceManager<VmServiceWrapper> {
   FakeServiceManager({
     VmServiceWrapper? service,
-    this.hasConnection = true,
     this.connectedAppInitialized = true,
     this.availableServices = const [],
     this.availableLibraries = const [],
     this.onVmServiceOpened,
     Map<String, Response>? serviceExtensionResponses,
     String? rootLibrary,
-  })  : serviceExtensionResponses =
-            serviceExtensionResponses ?? _defaultServiceExtensionResponses,
-        _isolateManager = FakeIsolateManager(rootLibrary: rootLibrary) {
+    bool hasConnection = true,
+  }) : serviceExtensionResponses =
+           serviceExtensionResponses ?? _defaultServiceExtensionResponses,
+       _isolateManager = FakeIsolateManager(rootLibrary: rootLibrary) {
     this.service = service ?? createFakeService();
+    serviceUri = this.service!.wsUri;
     mockConnectedApp(
       connectedApp!,
       isFlutterApp: true,
       isProfileBuild: false,
       isWebApp: false,
     );
+    setConnectedState(hasConnection);
 
     when(vm.operatingSystem).thenReturn('macos');
     unawaited(vmServiceOpened(this.service!, onClosed: Future.value()));
   }
 
   static FakeVmServiceWrapper createFakeService({
-    Timeline? timelineData,
+    PerfettoTimeline? timelineData,
     SocketProfile? socketProfile,
     HttpProfile? httpProfile,
     SamplesMemoryJson? memoryData,
@@ -137,20 +125,19 @@ class FakeServiceManager extends Fake
     Map<String, String>? resolvedUriMap,
     ClassList? classList,
     List<({String flagName, String value})>? vmFlags,
-  }) =>
-      FakeVmServiceWrapper(
-        _flagManager,
-        timelineData,
-        socketProfile,
-        httpProfile,
-        memoryData,
-        allocationData,
-        cpuSamples,
-        allocationSamples,
-        resolvedUriMap,
-        classList,
-        vmFlags,
-      );
+  }) => FakeVmServiceWrapper(
+    _flagManager,
+    timelineData,
+    socketProfile,
+    httpProfile,
+    memoryData,
+    allocationData,
+    cpuSamples,
+    allocationSamples,
+    resolvedUriMap,
+    classList,
+    vmFlags,
+  );
 
   final List<String> availableServices;
 
@@ -170,6 +157,9 @@ class FakeServiceManager extends Fake
   VmServiceWrapper? service;
 
   @override
+  String? serviceUri;
+
+  @override
   VM get vm => _mockVM;
   final _mockVM = MockVM();
 
@@ -177,10 +167,7 @@ class FakeServiceManager extends Fake
   Future<VmService> onServiceAvailable = Future.value(MockVmService());
 
   @override
-  bool get isServiceAvailable => hasConnection;
-
-  @override
-  bool hasConnection;
+  bool get isServiceAvailable => connectedState.value.connected;
 
   @override
   bool connectedAppInitialized;
@@ -189,9 +176,10 @@ class FakeServiceManager extends Fake
   IsolateManager get isolateManager => _isolateManager;
 
   @override
-  final ResolvedUriManager resolvedUriManager = ResolvedUriManager();
+  final resolvedUriManager = ResolvedUriManager();
 
   @override
+  // ignore: avoid-explicit-type-declaration, required to override base class.
   final FakeServiceExtensionManager serviceExtensionManager =
       FakeServiceExtensionManager();
 
@@ -244,19 +232,21 @@ class FakeServiceManager extends Fake
 
   @override
   Future<void> manuallyDisconnect() async {
-    changeState(false, manual: true);
+    setConnectedState(false, manual: true);
   }
 
   @override
   ValueListenable<ConnectedState> get connectedState => _connectedState;
 
-  final ValueNotifier<ConnectedState> _connectedState =
-      ValueNotifier(const ConnectedState(false));
+  final _connectedState = ValueNotifier<ConnectedState>(
+    const ConnectedState(false),
+  );
 
-  void changeState(bool value, {bool manual = false}) {
-    hasConnection = value;
-    _connectedState.value =
-        ConnectedState(value, userInitiatedConnectionState: manual);
+  void setConnectedState(bool value, {bool manual = false}) {
+    _connectedState.value = ConnectedState(
+      value,
+      userInitiatedConnectionState: manual,
+    );
   }
 
   @override
@@ -281,7 +271,7 @@ class FakeServiceManager extends Fake
   }
 
   // TODO(jacobr): the fact that this has to be a static final is ugly.
-  static final VmFlagManager _flagManager = VmFlagManager();
+  static final _flagManager = VmFlagManager();
 
   Completer<void> flagsInitialized = Completer();
 
@@ -299,5 +289,11 @@ class FakeServiceManager extends Fake
     resolvedUriManager.vmServiceOpened(service);
     await initFlagManager();
     return Future.value();
+  }
+
+  @override
+  Future<String?> mainIsolateRootLibraryUriAsString() {
+    final fakeIsolateManager = isolateManager as FakeIsolateManager;
+    return Future.value(fakeIsolateManager.rootLibrary);
   }
 }

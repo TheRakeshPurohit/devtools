@@ -1,21 +1,21 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../shared/console/eval/inspector_tree.dart';
-import '../../shared/diagnostics_text_styles.dart';
+import '../../shared/primitives/diagnostics_text_styles.dart';
 import '../../shared/primitives/utils.dart';
-import '../../shared/utils.dart';
+import '../../shared/ui/common_widgets.dart';
 
 class InspectorBreadcrumbNavigator extends StatelessWidget {
   const InspectorBreadcrumbNavigator({
-    Key? key,
+    super.key,
     required this.items,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   /// Max number of visible breadcrumbs including root item but not 'more' item.
   /// E.g. value 5 means root and 4 breadcrumbs can be displayed, other
@@ -23,7 +23,7 @@ class InspectorBreadcrumbNavigator extends StatelessWidget {
   static const _maxNumberOfBreadcrumbs = 5;
 
   final List<InspectorTreeNode> items;
-  final Function(InspectorTreeNode?) onTap;
+  final void Function(InspectorTreeNode?) onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -33,25 +33,23 @@ class InspectorBreadcrumbNavigator extends StatelessWidget {
 
     final breadcrumbs = _generateBreadcrumbs(items);
     return SizedBox(
-      height: isDense() ? 24 : 28,
+      height: Breadcrumb.height,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6),
         child: Row(
-          children: breadcrumbs.map((item) {
-            if (item.isChevron) {
-              return Icon(
-                Icons.chevron_right,
-                size: defaultIconSize,
-              );
-            }
+          children:
+              breadcrumbs.map((item) {
+                if (item.isChevron) {
+                  return Icon(Icons.chevron_right, size: defaultIconSize);
+                }
 
-            return Flexible(
-              child: _InspectorBreadcrumb(
-                data: item,
-                onTap: () => onTap(item.node),
-              ),
-            );
-          }).toList(),
+                return Flexible(
+                  child: _InspectorBreadcrumb(
+                    data: item,
+                    onTap: () => onTap(item.node),
+                  ),
+                );
+              }).toList(),
         ),
       ),
     );
@@ -61,34 +59,32 @@ class InspectorBreadcrumbNavigator extends StatelessWidget {
     List<InspectorTreeNode> nodes,
   ) {
     final lastNode = nodes.safeLast;
-    final List<_InspectorBreadcrumbData> items = nodes.map((node) {
-      return _InspectorBreadcrumbData.wrap(
-        node: node,
-        isSelected: node == lastNode,
-      );
-    }).toList();
+    final items =
+        nodes.map((node) {
+          return _InspectorBreadcrumbData.wrap(
+            node: node,
+            isSelected: node == lastNode,
+          );
+        }).toList();
     List<_InspectorBreadcrumbData> breadcrumbs;
-    breadcrumbs = items.length > _maxNumberOfBreadcrumbs
-        ? [
-            items[0],
-            _InspectorBreadcrumbData.more(),
-            ...items.sublist(
-              items.length - _maxNumberOfBreadcrumbs + 1,
-              items.length,
-            ),
-          ]
-        : items;
+    breadcrumbs =
+        items.length > _maxNumberOfBreadcrumbs
+            ? [
+              items[0],
+              _InspectorBreadcrumbData.more(),
+              ...items.sublist(
+                items.length - _maxNumberOfBreadcrumbs + 1,
+                items.length,
+              ),
+            ]
+            : items;
 
     return breadcrumbs.joinWith(_InspectorBreadcrumbData.chevron());
   }
 }
 
 class _InspectorBreadcrumb extends StatelessWidget {
-  const _InspectorBreadcrumb({
-    Key? key,
-    required this.data,
-    required this.onTap,
-  }) : super(key: key);
+  const _InspectorBreadcrumb({required this.data, required this.onTap});
 
   static const _iconScale = 0.75;
 
@@ -101,19 +97,21 @@ class _InspectorBreadcrumb extends StatelessWidget {
       data.text,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: DiagnosticsTextStyles.regular(Theme.of(context).colorScheme)
-          .copyWith(fontSize: scaleByFontFactor(11)),
+      style: DiagnosticsTextStyles.regular(
+        Theme.of(context).colorScheme,
+      ).copyWith(fontSize: scaleByFontFactor(11)),
     );
 
-    final icon = data.icon == null
-        ? null
-        : Transform.scale(
-            scale: _iconScale,
-            child: Padding(
-              padding: const EdgeInsets.only(right: iconPadding),
-              child: data.icon,
-            ),
-          );
+    final icon =
+        data.icon == null
+            ? null
+            : Transform.scale(
+              scale: _iconScale,
+              child: Padding(
+                padding: const EdgeInsets.only(right: iconPadding),
+                child: data.icon,
+              ),
+            );
 
     return InkWell(
       onTap: data.isClickable ? onTap : null,
@@ -125,16 +123,14 @@ class _InspectorBreadcrumb extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           borderRadius: defaultBorderRadius,
-          color: data.isSelected
-              ? Theme.of(context).colorScheme.selectedRowBackgroundColor
-              : Colors.transparent,
+          color:
+              data.isSelected
+                  ? Theme.of(context).colorScheme.selectedRowBackgroundColor
+                  : Colors.transparent,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) icon,
-            Flexible(child: text),
-          ],
+          children: [if (icon != null) icon, Flexible(child: text)],
         ),
       ),
     );
@@ -192,10 +188,7 @@ class _InspectorBreadcrumbData {
 
   Widget? get icon {
     if (alternativeIcon != null) {
-      return Icon(
-        _breadcrumbSeparatorIcon,
-        size: defaultIconSize,
-      );
+      return Icon(_breadcrumbSeparatorIcon, size: defaultIconSize);
     }
 
     return node?.diagnostic?.icon;

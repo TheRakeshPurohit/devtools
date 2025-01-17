@@ -1,6 +1,6 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +8,15 @@ import 'package:vm_service/vm_service.dart';
 
 import '../../../../shared/analytics/analytics.dart' as ga;
 import '../../../../shared/analytics/constants.dart' as gac;
-import '../../../../shared/common_widgets.dart';
 import '../../../../shared/globals.dart';
+import '../../../../shared/memory/gc_stats.dart';
+import '../../../../shared/primitives/byte_utils.dart';
 import '../../../../shared/primitives/simple_items.dart';
 import '../../../../shared/primitives/utils.dart';
 import '../../../../shared/table/table.dart';
 import '../../../../shared/table/table_controller.dart';
 import '../../../../shared/table/table_data.dart';
-import '../../../vm_developer/vm_service_private_extensions.dart';
+import '../../../../shared/ui/common_widgets.dart';
 import '../../shared/heap/class_filter.dart';
 import '../../shared/primitives/simple_elements.dart';
 import '../../shared/widgets/class_filter.dart';
@@ -29,17 +30,14 @@ import 'profile_pane_controller.dart';
 
 /// The default width for columns containing *mostly* numeric data (e.g.,
 /// instances, memory).
-const _defaultNumberFieldWidth = 90.0;
+const _defaultNumberFieldWidth = 80.0;
 
 class _FieldClassNameColumn extends ColumnData<ProfileRecord>
     implements
         ColumnRenderer<ProfileRecord>,
         ColumnHeaderRenderer<ProfileRecord> {
   _FieldClassNameColumn(this.classFilterData)
-      : super(
-          'Class',
-          fixedWidthPx: scaleByFontFactor(200),
-        );
+    : super('Class', fixedWidthPx: scaleByFontFactor(200));
 
   @override
   String? getValue(ProfileRecord dataObject) => dataObject.heapClass.className;
@@ -47,9 +45,6 @@ class _FieldClassNameColumn extends ColumnData<ProfileRecord>
   // We are removing the tooltip, because it is provided by [HeapClassView].
   @override
   String getTooltip(ProfileRecord dataObject) => '';
-
-  @override
-  bool get supportsSorting => true;
 
   final ClassFilterData classFilterData;
 
@@ -66,7 +61,7 @@ class _FieldClassNameColumn extends ColumnData<ProfileRecord>
     return HeapClassView(
       theClass: data.heapClass,
       showCopyButton: isRowSelected,
-      copyGaItem: gac.MemoryEvent.diffClassSingleCopy,
+      copyGaItem: gac.MemoryEvents.diffClassSingleCopy.name,
       rootPackage: serviceConnection.serviceManager.rootInfoNow().package,
     );
   }
@@ -109,12 +104,12 @@ enum HeapGeneration {
 class _FieldInstanceCountColumn extends ColumnData<ProfileRecord>
     implements ColumnRenderer<ProfileRecord> {
   _FieldInstanceCountColumn({required this.heap})
-      : super(
-          'Instances',
-          titleTooltip: 'The number of instances of the class in the heap',
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
-        );
+    : super(
+        'Instances',
+        titleTooltip: 'The number of instances of the class in the heap',
+        alignment: ColumnAlignment.right,
+        fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
+      );
 
   final HeapGeneration heap;
 
@@ -152,11 +147,11 @@ class _FieldInstanceCountColumn extends ColumnData<ProfileRecord>
 
 class _FieldExternalSizeColumn extends _FieldSizeColumn {
   _FieldExternalSizeColumn({required super.heap})
-      : super._(
-          title: 'External',
-          titleTooltip:
-              'Non-Dart heap allocated memory associated with a Dart object',
-        );
+    : super._(
+        title: 'External',
+        titleTooltip:
+            'Non-Dart heap allocated memory associated with a Dart object',
+      );
 
   @override
   int? getValue(ProfileRecord dataObject) {
@@ -173,10 +168,7 @@ class _FieldExternalSizeColumn extends _FieldSizeColumn {
 
 class _FieldDartHeapSizeColumn extends _FieldSizeColumn {
   _FieldDartHeapSizeColumn({required super.heap})
-      : super._(
-          title: 'Dart Heap',
-          titleTooltip: SizeType.shallow.description,
-        );
+    : super._(title: 'Dart Heap', titleTooltip: SizeType.shallow.description);
 
   @override
   int? getValue(ProfileRecord dataObject) {
@@ -192,9 +184,11 @@ class _FieldDartHeapSizeColumn extends _FieldSizeColumn {
 }
 
 class _FieldSizeColumn extends ColumnData<ProfileRecord> {
-  factory _FieldSizeColumn({required heap}) => _FieldSizeColumn._(
+  factory _FieldSizeColumn({required HeapGeneration heap}) =>
+      _FieldSizeColumn._(
         title: 'Total Size',
-        titleTooltip: "The sum of the type's total shallow memory "
+        titleTooltip:
+            "The sum of the type's total shallow memory "
             'consumption in the Dart heap and associated external (e.g., '
             'non-Dart heap) allocations',
         heap: heap,
@@ -205,11 +199,11 @@ class _FieldSizeColumn extends ColumnData<ProfileRecord> {
     required String titleTooltip,
     required this.heap,
   }) : super(
-          title,
-          titleTooltip: titleTooltip,
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
-        );
+         title,
+         titleTooltip: titleTooltip,
+         alignment: ColumnAlignment.right,
+         fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
+       );
 
   final HeapGeneration heap;
 
@@ -227,12 +221,7 @@ class _FieldSizeColumn extends ColumnData<ProfileRecord> {
 
   @override
   String getDisplayValue(ProfileRecord dataObject) =>
-      prettyPrintBytes(
-        getValue(dataObject),
-        includeUnit: true,
-        kbFractionDigits: 1,
-      ) ??
-      '';
+      prettyPrintBytes(getValue(dataObject), includeUnit: true) ?? '';
 
   @override
   String getTooltip(ProfileRecord dataObject) => '${getValue(dataObject)} B';
@@ -265,26 +254,25 @@ abstract class _GCHeapStatsColumn extends ColumnData<AdaptedProfile> {
 }
 
 class _GCHeapNameColumn extends ColumnData<AdaptedProfile> {
-  _GCHeapNameColumn()
-      : super(
-          '',
-          fixedWidthPx: scaleByFontFactor(200),
-        );
+  _GCHeapNameColumn() : super('', fixedWidthPx: scaleByFontFactor(200));
 
   @override
   String? getValue(AdaptedProfile dataObject) {
     return 'GC Statistics';
   }
+
+  @override
+  bool get supportsSorting => false;
 }
 
 class _GCHeapUsageColumn extends _GCHeapStatsColumn {
   _GCHeapUsageColumn({required super.generation})
-      : super(
-          'Usage',
-          titleTooltip: 'The current amount of memory allocated from the heap',
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
-        );
+    : super(
+        'Usage',
+        titleTooltip: 'The current amount of memory allocated from the heap',
+        alignment: ColumnAlignment.right,
+        fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
+      );
 
   @override
   int? getValue(AdaptedProfile dataObject) {
@@ -302,13 +290,13 @@ class _GCHeapUsageColumn extends _GCHeapStatsColumn {
 
 class _GCHeapCapacityColumn extends _GCHeapStatsColumn {
   _GCHeapCapacityColumn({required super.generation})
-      : super(
-          'Capacity',
-          titleTooltip:
-              'The current size of the heap, including unallocated memory',
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
-        );
+    : super(
+        'Capacity',
+        titleTooltip:
+            'The current size of the heap, including unallocated memory',
+        alignment: ColumnAlignment.right,
+        fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
+      );
 
   @override
   int? getValue(AdaptedProfile dataObject) {
@@ -326,12 +314,12 @@ class _GCHeapCapacityColumn extends _GCHeapStatsColumn {
 
 class _GCCountColumn extends _GCHeapStatsColumn {
   _GCCountColumn({required super.generation})
-      : super(
-          'Collections',
-          titleTooltip: 'The number of garbage collections run on the heap',
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
-        );
+    : super(
+        'Collections',
+        titleTooltip: 'The number of garbage collections run on the heap',
+        alignment: ColumnAlignment.right,
+        fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
+      );
 
   @override
   int? getValue(AdaptedProfile dataObject) {
@@ -344,13 +332,13 @@ class _GCCountColumn extends _GCHeapStatsColumn {
 
 class _GCLatencyColumn extends _GCHeapStatsColumn {
   _GCLatencyColumn({required super.generation})
-      : super(
-          'Latency',
-          titleTooltip:
-              'The average time taken to perform a garbage collection on the heap (ms)',
-          alignment: ColumnAlignment.right,
-          fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
-        );
+    : super(
+        'Latency',
+        titleTooltip:
+            'The average time taken to perform a garbage collection on the heap (ms)',
+        alignment: ColumnAlignment.right,
+        fixedWidthPx: scaleByFontFactor(_defaultNumberFieldWidth),
+      );
 
   @override
   double? getValue(AdaptedProfile dataObject) {
@@ -364,9 +352,7 @@ class _GCLatencyColumn extends _GCHeapStatsColumn {
   @override
   String getDisplayValue(AdaptedProfile dataObject) {
     return durationText(
-      Duration(
-        milliseconds: getValue(dataObject)!.toInt(),
-      ),
+      Duration(milliseconds: getValue(dataObject)!.toInt()),
       fractionDigits: 2,
     );
   }
@@ -376,16 +362,10 @@ class _GCLatencyColumn extends _GCHeapStatsColumn {
 }
 
 class _GCStatsTable extends StatelessWidget {
-  const _GCStatsTable({
-    Key? key,
-    required this.controller,
-  }) : super(key: key);
+  const _GCStatsTable({required this.controller});
 
   static final _columnGroup = [
-    ColumnGroup.fromText(
-      title: '',
-      range: const Range(0, 1),
-    ),
+    ColumnGroup.fromText(title: '', range: const Range(0, 1)),
     ColumnGroup.fromText(
       title: HeapGeneration.total.toString(),
       range: const Range(1, 5),
@@ -409,12 +389,8 @@ class _GCStatsTable extends StatelessWidget {
     ]) ...[
       _GCHeapUsageColumn(generation: generation),
       _GCHeapCapacityColumn(generation: generation),
-      _GCCountColumn(
-        generation: generation,
-      ),
-      _GCLatencyColumn(
-        generation: generation,
-      ),
+      _GCCountColumn(generation: generation),
+      _GCLatencyColumn(generation: generation),
     ],
   ];
 
@@ -460,9 +436,17 @@ class AllocationProfileTableView extends StatefulWidget {
 class AllocationProfileTableViewState
     extends State<AllocationProfileTableView> {
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
     widget.controller.initialize();
+  }
+
+  @override
+  void didUpdateWidget(AllocationProfileTableView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      widget.controller.initialize();
+    }
   }
 
   @override
@@ -471,9 +455,7 @@ class AllocationProfileTableViewState
       children: [
         Padding(
           padding: const EdgeInsets.all(denseSpacing),
-          child: _AllocationProfileTableControls(
-            allocationProfileController: widget.controller,
-          ),
+          child: _AllocationProfileTableControls(controller: widget.controller),
         ),
         ValueListenableBuilder<bool>(
           valueListenable: preferences.vmDeveloperModeEnabled,
@@ -486,38 +468,26 @@ class AllocationProfileTableViewState
                   // and columns) and one data row. We add a slight padding to
                   // ensure the underlying scrollable area has enough space to not
                   // display a scroll bar.
-                  height: defaultRowHeight + areaPaneHeaderHeight * 2 + 1,
-                  child: _GCStatsTable(
-                    controller: widget.controller,
-                  ),
+                  height: defaultRowHeight + defaultHeaderHeight * 2 + 1,
+                  child: _GCStatsTable(controller: widget.controller),
                 ),
                 const ThickDivider(),
               ],
             );
           },
         ),
-        Expanded(
-          child: _AllocationProfileTable(
-            controller: widget.controller,
-          ),
-        ),
+        Expanded(child: _AllocationProfileTable(controller: widget.controller)),
       ],
     );
   }
 }
 
 class _AllocationProfileTable extends StatelessWidget {
-  _AllocationProfileTable({
-    Key? key,
-    required this.controller,
-  }) : super(key: key);
+  _AllocationProfileTable({required this.controller});
 
   /// List of columns displayed in VM developer mode state.
   static final _vmModeColumnGroups = [
-    ColumnGroup.fromText(
-      title: '',
-      range: const Range(0, 1),
-    ),
+    ColumnGroup.fromText(title: '', range: const Range(0, 1)),
     ColumnGroup.fromText(
       title: HeapGeneration.total.toString(),
       range: const Range(1, 5),
@@ -532,15 +502,14 @@ class _AllocationProfileTable extends StatelessWidget {
     ),
   ];
 
-  static final _fieldSizeColumn = _FieldSizeColumn(
-    heap: HeapGeneration.total,
-  );
+  static final _fieldSizeColumn = _FieldSizeColumn(heap: HeapGeneration.total);
 
-  late final List<ColumnData<ProfileRecord>> _columns = [
+  late final _columns = <ColumnData<ProfileRecord>>[
     _FieldClassNameColumn(
       ClassFilterData(
         filter: controller.classFilter,
         onChanged: controller.setFilter,
+        rootPackage: controller.rootPackage,
       ),
     ),
     _FieldInstanceCountColumn(heap: HeapGeneration.total),
@@ -580,9 +549,10 @@ class _AllocationProfileTable extends StatelessWidget {
               keyFactory: (element) => Key(element.heapClass.fullName),
               data: profile.records,
               dataKey: 'allocation-profile',
-              columnGroups: vmDeveloperModeEnabled
-                  ? _AllocationProfileTable._vmModeColumnGroups
-                  : null,
+              columnGroups:
+                  vmDeveloperModeEnabled
+                      ? _AllocationProfileTable._vmModeColumnGroups
+                      : null,
               columns: [
                 ..._columns,
                 if (vmDeveloperModeEnabled) ..._vmDeveloperModeColumns,
@@ -601,30 +571,25 @@ class _AllocationProfileTable extends StatelessWidget {
 }
 
 class _AllocationProfileTableControls extends StatelessWidget {
-  const _AllocationProfileTableControls({
-    Key? key,
-    required this.allocationProfileController,
-  }) : super(key: key);
+  const _AllocationProfileTableControls({required this.controller});
 
-  final ProfilePaneController allocationProfileController;
+  final ProfilePaneController controller;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _ExportAllocationProfileButton(
-          allocationProfileController: allocationProfileController,
-        ),
-        const SizedBox(width: denseSpacing),
-        RefreshButton(
-          gaScreen: gac.memory,
-          gaSelection: gac.MemoryEvent.profileRefreshManual,
-          onPressed: allocationProfileController.refresh,
-        ),
-        const SizedBox(width: denseSpacing),
-        _RefreshOnGCToggleButton(
-          allocationProfileController: allocationProfileController,
-        ),
+        _ExportAllocationProfileButton(allocationProfileController: controller),
+        if (!offlineDataController.showingOfflineData.value) ...[
+          const SizedBox(width: denseSpacing),
+          RefreshButton(
+            gaScreen: gac.memory,
+            gaSelection: gac.MemoryEvents.profileRefreshManual.name,
+            onPressed: controller.refresh,
+          ),
+          const SizedBox(width: denseSpacing),
+          _RefreshOnGCToggleButton(allocationProfileController: controller),
+        ],
         const SizedBox(width: denseSpacing),
         const _ProfileHelpLink(),
       ],
@@ -634,9 +599,8 @@ class _AllocationProfileTableControls extends StatelessWidget {
 
 class _ExportAllocationProfileButton extends StatelessWidget {
   const _ExportAllocationProfileButton({
-    Key? key,
     required this.allocationProfileController,
-  }) : super(key: key);
+  });
 
   final ProfilePaneController allocationProfileController;
 
@@ -645,15 +609,18 @@ class _ExportAllocationProfileButton extends StatelessWidget {
     return ValueListenableBuilder<AdaptedProfile?>(
       valueListenable: allocationProfileController.currentAllocationProfile,
       builder: (context, currentAllocationProfile, _) {
-        return ToCsvButton(
+        return DownloadButton(
           gaScreen: gac.memory,
-          gaSelection: gac.MemoryEvent.profileDownloadCsv,
+          gaSelection: gac.MemoryEvents.profileDownloadCsv.name,
           minScreenWidthForTextBeforeScaling: memoryControlsMinVerboseWidth,
           tooltip: 'Download allocation profile data in CSV format',
-          onPressed: currentAllocationProfile == null
-              ? null
-              : () => allocationProfileController
-                  .downloadMemoryTableCsv(currentAllocationProfile),
+          label: 'CSV',
+          onPressed:
+              currentAllocationProfile == null
+                  ? null
+                  : () => allocationProfileController.downloadMemoryTableCsv(
+                    currentAllocationProfile,
+                  ),
         );
       },
     );
@@ -661,10 +628,7 @@ class _ExportAllocationProfileButton extends StatelessWidget {
 }
 
 class _RefreshOnGCToggleButton extends StatelessWidget {
-  const _RefreshOnGCToggleButton({
-    Key? key,
-    required this.allocationProfileController,
-  }) : super(key: key);
+  const _RefreshOnGCToggleButton({required this.allocationProfileController});
 
   final ProfilePaneController allocationProfileController;
 
@@ -682,7 +646,7 @@ class _RefreshOnGCToggleButton extends StatelessWidget {
             allocationProfileController.toggleRefreshOnGc();
             ga.select(
               gac.memory,
-              '${gac.MemoryEvent.profileRefreshOnGc}-$refreshOnGc',
+              '${gac.MemoryEvents.profileRefreshOnGc.name}-$refreshOnGc',
             );
           },
         );
@@ -692,30 +656,35 @@ class _RefreshOnGCToggleButton extends StatelessWidget {
 }
 
 class _ProfileHelpLink extends StatelessWidget {
-  const _ProfileHelpLink({Key? key}) : super(key: key);
-
-  static const _documentationTopic = gac.MemoryEvent.profileHelp;
+  const _ProfileHelpLink();
 
   @override
   Widget build(BuildContext context) {
     return HelpButtonWithDialog(
       gaScreen: gac.memory,
-      gaSelection: gac.topicDocumentationButton(_documentationTopic),
+      gaSelection: gac.topicDocumentationButton(
+        gac.MemoryEvents.profileHelp.name,
+      ),
       dialogTitle: 'Memory Allocation Profile Help',
-      child: Column(
+      actions: [
+        MoreInfoLink(
+          url: DocLinks.profile.value,
+          gaScreenName: '',
+          gaSelectedItemDescription: gac.topicDocumentationLink(
+            gac.MemoryEvents.profileHelp.name,
+          ),
+        ),
+      ],
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Text('The allocation profile tab displays information about\n'
-              'allocated objects in the Dart heap of the selected\n'
-              'isolate.'),
-          const SizedBox(height: denseSpacing),
-          const ClassTypeLegend(),
-          MoreInfoLink(
-            url: DocLinks.profile.value,
-            gaScreenName: '',
-            gaSelectedItemDescription:
-                gac.topicDocumentationLink(_documentationTopic),
+          Text(
+            'The allocation profile tab displays information about\n'
+            'allocated objects in the Dart heap of the selected\n'
+            'isolate.',
           ),
+          SizedBox(height: denseSpacing),
+          ClassTypeLegend(),
         ],
       ),
     );

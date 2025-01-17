@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
@@ -26,11 +26,10 @@ class ClassHierarchyExplorerController {
     final isolateId = isolate.id!;
     final classList = await service.getClassList(isolateId);
     // TODO(bkonyi): we should cache the class list like we do the script list
-    final classes = (await Future.wait([
+    final classes = await Future.wait([
       for (final cls in classList.classes!)
         service.getObject(isolateId, cls.id!).then((e) => e as Class),
-    ]))
-        .cast<Class>();
+    ]);
 
     buildHierarchy(classes);
   }
@@ -38,10 +37,7 @@ class ClassHierarchyExplorerController {
   @visibleForTesting
   void buildHierarchy(List<Class> classes) {
     final nodes = <String?, ClassHierarchyNode>{
-      for (final cls in classes)
-        cls.id: ClassHierarchyNode(
-          cls: cls,
-        ),
+      for (final cls in classes) cls.id: ClassHierarchyNode(cls: cls),
     };
 
     late final ClassHierarchyNode objectNode;

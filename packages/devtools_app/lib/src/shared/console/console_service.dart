@@ -1,9 +1,10 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 
+import 'package:devtools_app_shared/service.dart';
 import 'package:devtools_app_shared/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:vm_service/vm_service.dart';
@@ -15,7 +16,7 @@ import '../diagnostics/generic_instance_reference.dart';
 import '../diagnostics/inspector_service.dart';
 import '../diagnostics/tree_builder.dart';
 import '../globals.dart';
-import '../memory/adapted_heap_data.dart';
+import '../memory/heap_object.dart';
 import '../primitives/utils.dart';
 
 /// A line in the console.
@@ -23,23 +24,13 @@ import '../primitives/utils.dart';
 /// TODO(jacobr): support console lines that are structured error messages as
 /// well.
 class ConsoleLine {
-  factory ConsoleLine.text(
-    String text, {
-    bool forceScrollIntoView = false,
-  }) =>
-      TextConsoleLine(
-        text,
-        forceScrollIntoView: forceScrollIntoView,
-      );
+  factory ConsoleLine.text(String text, {bool forceScrollIntoView = false}) =>
+      TextConsoleLine(text, forceScrollIntoView: forceScrollIntoView);
 
   factory ConsoleLine.dartObjectNode(
     DartObjectNode variable, {
     bool forceScrollIntoView = false,
-  }) =>
-      VariableConsoleLine(
-        variable,
-        forceScrollIntoView: forceScrollIntoView,
-      );
+  }) => VariableConsoleLine(variable, forceScrollIntoView: forceScrollIntoView);
 
   ConsoleLine._(this.forceScrollIntoView);
 
@@ -49,7 +40,7 @@ class ConsoleLine {
 
 class TextConsoleLine extends ConsoleLine {
   TextConsoleLine(this.text, {bool forceScrollIntoView = false})
-      : super._(forceScrollIntoView);
+    : super._(forceScrollIntoView);
   final String text;
 
   @override
@@ -60,9 +51,7 @@ class TextConsoleLine extends ConsoleLine {
 
 class VariableConsoleLine extends ConsoleLine {
   VariableConsoleLine(this.variable, {bool forceScrollIntoView = false})
-      : super._(
-          forceScrollIntoView,
-        );
+    : super._(forceScrollIntoView);
   final DartObjectNode variable;
 
   @override
@@ -74,26 +63,25 @@ class VariableConsoleLine extends ConsoleLine {
 /// Source of truth for the state of the Console including both events from the
 /// VM and events emitted from other UI.
 class ConsoleService with DisposerMixin {
-  void appendBrowsableInstance({
+  Future<void> appendBrowsableInstance({
     required InstanceRef? instanceRef,
     required IsolateRef? isolateRef,
-    required HeapObjectSelection? heapSelection,
+    required HeapObject? heapSelection,
   }) async {
     if (instanceRef == null) {
-      final object = heapSelection?.object;
-      if (object == null || isolateRef == null) {
+      if (heapSelection?.index == null || isolateRef == null) {
         serviceConnection.consoleService.appendStdio(
           'Not enough information to browse the instance.',
         );
         return;
       }
 
-      instanceRef = await evalService.findObject(object, isolateRef);
+      instanceRef = await evalService.findObject(heapSelection!, isolateRef);
     }
 
     // If instanceRef is null at this point, user will see static references.
 
-    appendInstanceRef(
+    await appendInstanceRef(
       value: instanceRef,
       diagnostic: null,
       isolateRef: isolateRef,
@@ -102,14 +90,14 @@ class ConsoleService with DisposerMixin {
     );
   }
 
-  void appendInstanceRef({
+  Future<void> appendInstanceRef({
     String? name,
     required InstanceRef? value,
     required RemoteDiagnosticsNode? diagnostic,
     required IsolateRef? isolateRef,
     bool forceScrollIntoView = false,
     bool expandAll = false,
-    HeapObjectSelection? heapSelection,
+    HeapObject? heapSelection,
   }) async {
     _stdioTrailingNewline = false;
     final variable = DartObjectNode.fromValue(
@@ -165,8 +153,8 @@ class ConsoleService with DisposerMixin {
 
   /// Append to the stdout / stderr buffer.
   void appendStdio(String text) {
-    const int kMaxLogItemsLowerBound = 5000;
-    const int kMaxLogItemsUpperBound = 5500;
+    const kMaxLogItemsLowerBound = 5000;
+    const kMaxLogItemsUpperBound = 5500;
 
     // Parse out the new lines and append to the end of the existing lines.
 
@@ -178,8 +166,9 @@ class ConsoleService with DisposerMixin {
         last is TextConsoleLine) {
       _stdio.last = ConsoleLine.text('${last.text}${newLines.first}');
       if (newLines.length > 1) {
-        _stdio
-            .addAll(newLines.sublist(1).map((text) => ConsoleLine.text(text)));
+        _stdio.addAll(
+          newLines.sublist(1).map((text) => ConsoleLine.text(text)),
+        );
       }
     } else {
       _stdio.addAll(newLines.map((text) => ConsoleLine.text(text)));
@@ -211,12 +200,12 @@ class ConsoleService with DisposerMixin {
   }
 
   void _handleStdoutEvent(Event event) {
-    final String text = decodeBase64(event.bytes!);
+    final text = decodeBase64(event.bytes!);
     appendStdio(text);
   }
 
   void _handleStderrEvent(Event event) {
-    final String text = decodeBase64(event.bytes!);
+    final text = decodeBase64(event.bytes!);
     // TODO(devoncarew): Change to reporting stdio along with information about
     // whether the event was stdout or stderr.
     appendStdio(text);
@@ -267,7 +256,9 @@ class ConsoleService with DisposerMixin {
       );
       autoDisposeStreamSubscription(
         serviceConnection
-            .serviceManager.service!.onExtensionEventWithHistorySafe
+            .serviceManager
+            .service!
+            .onExtensionEventWithHistorySafe
             .listen(_handleExtensionEvent),
       );
       _serviceInitialized = true;
@@ -275,8 +266,8 @@ class ConsoleService with DisposerMixin {
   }
 
   void _handleExtensionEvent(Event e) async {
-    if (e.extensionKind == 'Flutter.Error' ||
-        e.extensionKind == 'Flutter.Print') {
+    if (e.extensionKind == FlutterEvent.error ||
+        e.extensionKind == FlutterEvent.print) {
       if (serviceConnection.serviceManager.connectedApp?.isProfileBuildNow !=
           true) {
         // The app isn't a debug build.
@@ -284,7 +275,7 @@ class ConsoleService with DisposerMixin {
       }
       // TODO(jacobr): events may be out of order. Use unique ids to ensure
       // consistent order of regular print statements and structured messages.
-      appendInstanceRef(
+      await appendInstanceRef(
         value: null,
         diagnostic: RemoteDiagnosticsNode(
           e.extensionData!.data,
@@ -303,7 +294,7 @@ class ConsoleService with DisposerMixin {
     _serviceInitialized = false;
   }
 
-  void _handleDebugEvent(Event event) async {
+  Future<void> _handleDebugEvent(Event event) async {
     // TODO(jacobr): keep events in order by tracking the original time and
     // sorting.
     if (event.kind == EventKind.kInspect) {
@@ -333,7 +324,7 @@ class ConsoleService with DisposerMixin {
           // returned getting the inspector ref.
         }
       }
-      appendInstanceRef(
+      await appendInstanceRef(
         value: event.inspectee,
         isolateRef: event.isolate,
         diagnostic: null,

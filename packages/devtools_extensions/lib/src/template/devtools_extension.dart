@@ -1,6 +1,6 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 import 'dart:async';
 import 'dart:js_interop';
@@ -8,12 +8,13 @@ import 'dart:js_interop';
 import 'package:devtools_app_shared/service.dart';
 import 'package:devtools_app_shared/ui.dart';
 import 'package:devtools_app_shared/utils.dart';
+import 'package:devtools_shared/devtools_shared.dart';
 import 'package:devtools_shared/service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:vm_service/vm_service.dart' hide Event;
-import 'package:web/helpers.dart' hide Text;
+import 'package:web/web.dart' hide Text;
 
 import '../api/api.dart';
 import '../api/model.dart';
@@ -33,7 +34,7 @@ part 'extension_manager.dart';
 ///   "args": [
 ///     "--dart-define=use_simulated_environment=true"
 ///   ]
-const bool _simulatedEnvironmentEnabled =
+const _simulatedEnvironmentEnabled =
     bool.fromEnvironment('use_simulated_environment');
 
 bool get _useSimulatedEnvironment =>
@@ -62,6 +63,23 @@ ExtensionManager get extensionManager =>
 ServiceManager get serviceManager =>
     _accessGlobalOrThrow<ServiceManager>(globalName: 'serviceManager');
 
+/// A manager for interacting with the Dart Tooling Daemon, if available.
+///
+/// This manager stores the current [DartToolingDaemon], which provides access to
+/// public methods registered by other DTD clients (for example, the IDE), as
+/// well as a minimal file sytsem API for reading, writing, and listing
+/// directories within the user's project.
+///
+/// [dtdManager] can only be accessed below the [DevToolsExtension] widget
+/// in the widget tree, since it is initialized as part of the
+/// [DevToolsExtension]'s [initState] lifecycle method.
+///
+/// DevTools extensions should not manually call [dtdManager.connect] or
+/// [dtdManager.disconnect], since this lifecycle is already handled by the
+/// [DevToolsExtension] widget.
+DTDManager get dtdManager =>
+    _accessGlobalOrThrow<DTDManager>(globalName: 'dtdManager');
+
 T _accessGlobalOrThrow<T>({required String globalName}) {
   final manager = globals[T] as T?;
   if (manager == null) {
@@ -82,9 +100,10 @@ T _accessGlobalOrThrow<T>({required String globalName}) {
 /// extension should be defined by [child].
 ///
 /// This wrapper:
-///  * initializes the [extensionManager] and [serviceManager] globals.
-///  * initializes the [extensionManager] with the VM service connection from
-///    DevTools when[requiresRunningApplication] is true.
+///  * initializes the [extensionManager], [serviceManager], and [dtdManager]
+///    globals.
+///  * initializes the [extensionManager] with the VM service and Dart Tooling
+///    Daemon connections when available.
 ///  * establishes a connection with DevTools for this extension to interact
 ///    over.
 ///
@@ -96,6 +115,10 @@ class DevToolsExtension extends StatefulWidget {
     super.key,
     required this.child,
     this.eventHandlers = const {},
+    @Deprecated(
+      'Set the requiresConnection field in the extension\'s config.yaml '
+      'file instead.',
+    )
     this.requiresRunningApplication = true,
   });
 
@@ -108,6 +131,10 @@ class DevToolsExtension extends StatefulWidget {
   final Map<DevToolsExtensionEventType, ExtensionEventHandler> eventHandlers;
 
   /// Whether this extension requires a running application to use.
+  @Deprecated(
+    'Set the requiresConnection field in the extension\'s config.yaml '
+    'file instead.',
+  )
   final bool requiresRunningApplication;
 
   @override
@@ -120,9 +147,7 @@ class _DevToolsExtensionState extends State<DevToolsExtension>
   void initState() {
     super.initState();
     _initGlobals();
-    extensionManager._init(
-      connectToVmService: widget.requiresRunningApplication,
-    );
+    unawaited(extensionManager._init());
     for (final handler in widget.eventHandlers.entries) {
       extensionManager.registerEventHandler(handler.key, handler.value);
     }
@@ -133,31 +158,29 @@ class _DevToolsExtensionState extends State<DevToolsExtension>
   void _initGlobals() {
     setGlobal(ExtensionManager, ExtensionManager());
     setGlobal(ServiceManager, ServiceManager());
-    // TODO(kenz): pull the IDE theme from the url query params.
-    setGlobal(IdeTheme, IdeTheme());
+    setGlobal(DTDManager, DTDManager());
+    setGlobal(IdeTheme, getIdeTheme());
   }
 
-  void _shutdown() {
+  Future<void> _shutdown() async {
     (globals[ExtensionManager] as ExtensionManager?)?._dispose();
     removeGlobal(ExtensionManager);
     removeGlobal(ServiceManager);
     removeGlobal(IdeTheme);
+    await (globals[DTDManager] as DTDManager?)?.dispose();
+    removeGlobal(DTDManager);
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     // TODO(https://github.com/flutter/flutter/issues/10437): dispose is never
     // called on hot restart, so these resources leak for local development.
-    _shutdown();
+    unawaited(_shutdown());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final child = _ConnectionAwareWrapper(
-      requiresRunningApplication: widget.requiresRunningApplication,
-      child: widget.child,
-    );
     return MaterialApp(
       themeMode: extensionManager.darkThemeEnabled.value
           ? ThemeMode.dark
@@ -175,37 +198,11 @@ class _DevToolsExtensionState extends State<DevToolsExtension>
       home: Scaffold(
         body: _useSimulatedEnvironment
             ? SimulatedDevToolsWrapper(
-                requiresRunningApplication: widget.requiresRunningApplication,
-                child: child,
+                onDtdConnectionChange: extensionManager._connectToDtd,
+                child: widget.child,
               )
-            : child,
+            : widget.child,
       ),
-    );
-  }
-}
-
-class _ConnectionAwareWrapper extends StatelessWidget {
-  const _ConnectionAwareWrapper({
-    required this.child,
-    required this.requiresRunningApplication,
-  });
-
-  final bool requiresRunningApplication;
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: serviceManager.connectedState,
-      builder: (context, connectedState, _) {
-        if (requiresRunningApplication && !connectedState.connected) {
-          return const Center(
-            child: Text('Please connect an app to use this DevTools Extension'),
-          );
-        }
-        return child;
-      },
     );
   }
 }

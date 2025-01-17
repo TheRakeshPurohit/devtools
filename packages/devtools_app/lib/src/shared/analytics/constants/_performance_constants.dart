@@ -1,16 +1,15 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// found in the LICENSE file or at https://developers.google.com/open-source/licenses/bsd.
 
 part of '../constants.dart';
 
 enum PerformanceEvents {
   refreshTimelineEvents,
+  includeCpuSamplesInTimeline,
   performanceOverlay,
-  timelineFlameChartHelp,
   framesChartVisibility,
   selectFlutterFrame,
-  traceEventProcessingTime,
   trackRebuilds,
   trackUserCreatedWidgetBuilds,
   trackPaints,
@@ -20,18 +19,22 @@ enum PerformanceEvents {
   disableClipLayers,
   disableOpacityLayers,
   disablePhysicalShapeLayers,
+  countWidgetBuilds('trackRebuildWidgets'),
   collectRasterStats,
   clearRasterStats,
   fullScreenLayerImage,
   clearRebuildStats,
-  perfettoModeTraceEventProcessingTime('traceEventProcessingTime-perfettoMode'),
   perfettoLoadTrace,
   perfettoScrollToTimeRange,
   perfettoShowHelp,
   performanceSettings,
-  traceCategories,
+  timelineSettings,
   openDataFile,
-  loadDataFromFile;
+  loadDataFromFile,
+  // Timing events.
+  perfettoModeTraceEventProcessingTime('traceEventProcessingTime-perfettoMode'),
+  getPerfettoVMTimelineWithCpuSamplesTime,
+  getPerfettoVMTimelineTime;
 
   const PerformanceEvents([this.nameOverride]);
 
@@ -39,6 +42,7 @@ enum PerformanceEvents {
 }
 
 enum PerformanceDocs {
+  flutterPerformanceDocs,
   performanceOverlayDocs,
   trackWidgetBuildsDocs,
   trackPaintsDocs,
